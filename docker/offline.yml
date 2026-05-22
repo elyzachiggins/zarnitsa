@@ -1,0 +1,45 @@
+# docker-compose configuration for fully-offline Zarnitsa deployment.
+#
+# Pre-flight:
+#   1. `ollama pull gemma3:27b`  (or qwen2.5:72b for max Russian fidelity)
+#   2. Place an air-gapped corpus snapshot in ./data/corpus/snapshots/<name>/
+#
+# Run:
+#   docker compose -f docker/offline.yml up
+
+services:
+  zarnitsa-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: zarnitsa-api
+    environment:
+      ZARNITSA_BACKBONE: ollama
+      ZARNITSA_OLLAMA_HOST: http://ollama:11434
+      ZARNITSA_OLLAMA_MODEL: gemma3:27b
+      ZARNITSA_FIDELITY_MODE: strict
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data:/app/data:ro
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: zarnitsa-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    # GPU access — uncomment if you have nvidia-container-toolkit
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  ollama-models:
