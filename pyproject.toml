@@ -54,9 +54,9 @@ dev = [
 zarnitsa = "zarnitsa.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/OWNER/zarnitsa"
-Repository = "https://github.com/OWNER/zarnitsa"
-Issues = "https://github.com/OWNER/zarnitsa/issues"
+Homepage = "https://github.com/elyzachiggins/zarnitsa"
+Repository = "https://github.com/elyzachiggins/zarnitsa"
+Issues = "https://github.com/elyzachiggins/zarnitsa/issues"
 
 [build-system]
 requires = ["hatchling"]
