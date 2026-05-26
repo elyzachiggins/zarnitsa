@@ -1,6 +1,6 @@
 # ZARNITSA
 
-An institutional system that simulates the decision-making apparatus of the Russian Federation Armed Forces through a multi-persona council. Intended for OPFOR red-team use, small-unit threat-intelligence training, and strategic advisory wargaming.
+A system that simulates the decision-making apparatus of the Russian Federation Armed Forces through a multi-persona council through doctrinal and deep analyses RAG. Intended for OPFOR red-team use, small-unit threat-intelligence training, and strategic advisory wargaming.
 
 > **Adversary modeling, not objective analysis.** Zarnitsa models the institutional worldview, doctrinal vocabulary, and decision-making patterns of the Russian General Staff and adjacent bodies. The output reflects the perspective those institutions would produce — it is not a neutral or balanced analysis of any situation. Use it for adversary modeling, training, and red-cell wargaming. Do not use it as a stand-in for independent strategic analysis.
 
