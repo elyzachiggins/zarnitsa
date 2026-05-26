@@ -74,4 +74,10 @@ def load_snapshot(snapshot: str | None = None) -> list[CorpusEntry]:
     base = snapshot_dir(snapshot)
     if not base.exists():
         raise CorpusError(f"corpus snapshot not found: {base}")
-    return [CorpusEntry.from_file(p) for p in sorted(base.glob("*.md"))]
+    entries = []
+    for p in sorted(base.glob("*.md")):
+        post = frontmatter.load(p)
+        if "tier" not in post.metadata:
+            continue  # skip README.md and other non-entry files
+        entries.append(CorpusEntry.from_file(p))
+    return entries
