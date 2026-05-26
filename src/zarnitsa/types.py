@@ -65,13 +65,28 @@ class PersonaTurn(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
+class WargameMode(str, Enum):
+    """Interaction mode for wargame deliberations.
+
+    FREEPLAY: council determines action from the scenario (MODE 1).
+    PREDETERMINED: an action is assigned; council adjudicates rationale and execution (MODE 2).
+    ANALYTIC: commentary mode — range of options, western assumption gaps, doctrinal analysis.
+    STRATEGIC: default non-wargame advisory mode.
+    """
+
+    FREEPLAY = "freeplay"
+    PREDETERMINED = "predetermined"
+    ANALYTIC = "analytic"
+    STRATEGIC = "strategic"
+
+
 class CouncilRequest(BaseModel):
     """Input to a council deliberation."""
 
     scenario: str
     cinc_intent: str | None = None
     constraints: list[str] = Field(default_factory=list)
-    mode: str = "strategic"  # strategic | opfor | wargame | advisory
+    wargame_mode: WargameMode = WargameMode.STRATEGIC
 
 
 class CouncilResponse(BaseModel):

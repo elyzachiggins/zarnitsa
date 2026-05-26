@@ -17,7 +17,7 @@ from zarnitsa.exceptions import PersonaError, ProviderError
 from zarnitsa.orchestrator import CULTURAL_PRIOR, run_council
 from zarnitsa.personas import load_persona, load_personas
 from zarnitsa.providers import ProviderMessage, get_provider
-from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole
+from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole, WargameMode
 
 app = FastAPI(
     title="Zarnitsa",

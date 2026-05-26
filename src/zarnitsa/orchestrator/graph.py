@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 from zarnitsa.orchestrator.cultural_prior import CULTURAL_PRIOR
 from zarnitsa.personas import load_personas
 from zarnitsa.providers import ProviderMessage, get_provider
-from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole, PersonaTurn
+from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole, PersonaTurn, WargameMode
 
 if TYPE_CHECKING:
     from zarnitsa.providers.base import BaseProvider
@@ -51,6 +51,43 @@ def _format_priors(turns: list[PersonaTurn]) -> str:
     return "\n\n".join(blocks)
 
 
+_MODE_HEADERS: dict[WargameMode, str] = {
+    WargameMode.FREEPLAY: (
+        "# Wargame mode — MODE 1 (FREEPLAY)\n"
+        "The council is determining its own course of action from the scenario. "
+        "State your analysis clearly. The final council output must: "
+        "(1) STATE the DECISION concisely; "
+        "(2) provide RATIONALE for Russian strategic interests; "
+        "(3) cite DOCTRINAL BASIS; "
+        "(4) identify RISKS and why they are accepted; "
+        "(5) state INFORMATION needs for the next decision cycle."
+    ),
+    WargameMode.PREDETERMINED: (
+        "# Wargame mode — MODE 2 (PREDETERMINED ACTIONS)\n"
+        "An action has been assigned to Russia. The council's role is to adjudicate it. "
+        "Each voice must: "
+        "(1) ACKNOWLEDGE the assigned action; "
+        "(2) explain RATIONALE — consistency with or divergence from doctrine; "
+        "(3) describe EXECUTION with operational detail; "
+        "(4) identify FOLLOW-ON actions; "
+        "(5) flag UNREALISTIC aspects while still executing."
+    ),
+    WargameMode.ANALYTIC: (
+        "# Wargame mode — ANALYTIC\n"
+        "Provide commentary from the Russian institutional perspective. "
+        "Your output must: "
+        "(1) explain HOW Russia perceives this situation; "
+        "(2) identify the RANGE OF OPTIONS consistent with doctrine; "
+        "(3) highlight incorrect WESTERN ASSUMPTIONS about Russian behavior; "
+        "(4) offer INSIGHTS participants may not have considered."
+    ),
+}
+
+
+def _mode_instruction(mode: WargameMode, role: PersonaRole) -> str:
+    return _MODE_HEADERS.get(mode, "")
+
+
 async def run_council(
     request: CouncilRequest,
     *,
@@ -78,6 +115,9 @@ async def run_council(
             user_msg_parts.append("# Constraints\n\n" + "\n".join(f"- {c}" for c in request.constraints))
         if priors:
             user_msg_parts.append(priors)
+        mode_instruction = _mode_instruction(request.wargame_mode, persona.role)
+        if mode_instruction:
+            user_msg_parts.append(mode_instruction)
         user_msg_parts.append(
             f"# Your turn\n\nSpeak now as {persona.title} ({persona.russian_name}). "
             "Follow your defined output format. Be specific. Mark fidelity."
@@ -100,7 +140,7 @@ async def run_council(
         dissents=[],
         turns=turns,
         knowledge_horizon=None,
-        metadata={"mode": request.mode, "personas_engaged": [t.persona.value for t in turns]},
+        metadata={"wargame_mode": request.wargame_mode.value, "personas_engaged": [t.persona.value for t in turns]},
     )
 
 
