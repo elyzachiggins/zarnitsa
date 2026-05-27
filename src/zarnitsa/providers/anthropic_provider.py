@@ -36,7 +36,6 @@ class AnthropicProvider(BaseProvider):
             resp = await self.client.messages.create(
                 model=self.model,
                 max_tokens=max_tokens,
-                temperature=temperature,
                 system=system or "",
                 messages=formatted,
             )
