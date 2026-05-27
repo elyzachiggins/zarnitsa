@@ -117,8 +117,12 @@ async function handleSubmit(): Promise<void> {
       updateStatus('BACKEND WAKING UP — PLEASE WAIT');
     }, 8000);
 
+    const deliberationTimer = setTimeout(() => {
+      updateStatus('PERSONAS DELIBERATING — THIS MAY TAKE 2–3 MINUTES');
+    }, 20000);
+
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000);
+    const timeout = setTimeout(() => controller.abort(), 300000);
 
     let res: Response;
     try {
@@ -130,6 +134,7 @@ async function handleSubmit(): Promise<void> {
       });
     } finally {
       clearTimeout(timeout);
+      clearTimeout(deliberationTimer);
       if (wakeTimer) clearTimeout(wakeTimer);
       wakeTimer = null;
     }
@@ -159,7 +164,7 @@ async function handleSubmit(): Promise<void> {
     panel.innerHTML = `
       <div class="error-box">
         ${isTimeout
-          ? 'Request timed out (120s). The backend may be under heavy load — please try again.'
+          ? 'Request timed out (5 min). The council may be overloaded — please try again.'
           : 'Council request failed. Please try again in a moment.'}
         <br><span style="font-size:0.78em;opacity:0.8">${esc(err instanceof Error ? err.message : String(err))}</span>
       </div>`;
