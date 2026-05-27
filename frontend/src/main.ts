@@ -34,6 +34,7 @@ const PERSONAS: Record<string, { abbr: string; title: string; cinc?: true }> = {
   minister_of_defense:           { abbr: 'МО',   title: 'Minister of Defense' },
   sino_russian_liaison:          { abbr: '中俄',  title: 'Sino-Russian Strategic Liaison' },
   economic_advisor:              { abbr: 'ЭС',   title: 'Economic Advisor' },
+  security_council:              { abbr: 'СовБез', title: 'Security Council of the Russian Federation' },
 };
 
 const MODE_HINTS: Record<string, string> = {

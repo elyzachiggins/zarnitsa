@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 STAGE_1 = [PersonaRole.GRU]
 STAGE_2 = [PersonaRole.GOU, PersonaRole.GOMU, PersonaRole.VBPS, PersonaRole.TSVSI, PersonaRole.ECON_ADVISOR]
 STAGE_3 = [PersonaRole.CGS]
-STAGE_4 = [PersonaRole.SINO_LIAISON, PersonaRole.MOD]
+STAGE_4 = [PersonaRole.SINO_LIAISON, PersonaRole.MOD, PersonaRole.SOVBEZ]
 STAGE_5 = [PersonaRole.CINC]
 
 

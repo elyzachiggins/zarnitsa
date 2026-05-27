@@ -37,6 +37,7 @@ class PersonaRole(str, Enum):
     CINC = "commander_in_chief"               # ВГК
     SINO_LIAISON = "sino_russian_liaison"     # advisor
     ECON_ADVISOR = "economic_advisor"         # advisor
+    SOVBEZ = "security_council"              # Совбез
 
 
 class ChatMessage(BaseModel):
