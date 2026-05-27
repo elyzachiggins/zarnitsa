@@ -97,21 +97,42 @@ async function handleSubmit(): Promise<void> {
   }
 
   btn.disabled = true;
-  panel.innerHTML = `
-    <div class="loading">
-      <div>COUNCIL IN DELIBERATION <span class="cursor">█</span></div>
-      <div class="loading-scenario">${esc(scenario.slice(0, 140))}${scenario.length > 140 ? '…' : ''}</div>
-    </div>`;
+
+  const updateStatus = (msg: string) => {
+    panel.innerHTML = `
+      <div class="loading">
+        <div>${msg} <span class="cursor">█</span></div>
+        <div class="loading-scenario">${esc(scenario.slice(0, 140))}${scenario.length > 140 ? '…' : ''}</div>
+      </div>`;
+  };
+
+  updateStatus('COUNCIL IN DELIBERATION');
 
   try {
     const body: Record<string, unknown> = { scenario, wargame_mode: mode };
     if (cincIntent) body.cinc_intent = cincIntent;
 
-    const res = await fetch(`${API_BASE}/v1/council`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    // Wake the backend first — if it's cold-starting this can take ~30s
+    let wakeTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+      updateStatus('BACKEND WAKING UP — PLEASE WAIT');
+    }, 8000);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000);
+
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}/v1/council`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+      if (wakeTimer) clearTimeout(wakeTimer);
+      wakeTimer = null;
+    }
 
     if (!res.ok) {
       throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`);
@@ -134,10 +155,13 @@ async function handleSubmit(): Promise<void> {
     });
 
   } catch (err) {
+    const isTimeout = err instanceof DOMException && err.name === 'AbortError';
     panel.innerHTML = `
       <div class="error-box">
-        Council request failed — is the backend running?<br>
-        <span style="font-size:0.78em;opacity:0.8">${esc(err instanceof Error ? err.message : String(err))}</span>
+        ${isTimeout
+          ? 'Request timed out (120s). The backend may be under heavy load — please try again.'
+          : 'Council request failed. Please try again in a moment.'}
+        <br><span style="font-size:0.78em;opacity:0.8">${esc(err instanceof Error ? err.message : String(err))}</span>
       </div>`;
   } finally {
     btn.disabled = false;
