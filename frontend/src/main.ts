@@ -154,7 +154,7 @@ function init(): void {
     <header>
       <div>
         <div class="logo">ЗАРНИЦА · ZARNITSA</div>
-        <div class="logo-sub">Russian Institutional Decision Council · Research Prototype · v0.1</div>
+        <div class="logo-sub">Russian Red Team Agent · Research Prototype · v0.1</div>
       </div>
     </header>
 
