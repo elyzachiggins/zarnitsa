@@ -57,7 +57,13 @@ def load_personas(directory: Path | None = None) -> list[Persona]:
     files = sorted(base.glob("*.md"))
     if not files:
         raise PersonaError(f"no persona files found in {base}")
-    return [_parse_file(p) for p in files]
+    personas = []
+    for p in files:
+        post = frontmatter.load(p)
+        if "role" not in post.metadata:
+            continue
+        personas.append(_parse_file(p))
+    return personas
 
 
 def load_persona(role: PersonaRole) -> Persona:
