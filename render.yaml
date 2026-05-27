@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: zarnitsa-api
+    runtime: python
+    buildCommand: pip install -e .
+    startCommand: uvicorn zarnitsa.api.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ZARNITSA_BACKBONE
+        value: anthropic
+      - key: ZARNITSA_CORPUS_SNAPSHOT
+        value: 2026-05
+      - key: ZARNITSA_DATA_DIR
+        value: data

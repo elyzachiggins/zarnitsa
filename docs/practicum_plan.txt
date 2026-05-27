@@ -1,0 +1,185 @@
+RRTA Practicum Plan Summer 2026
+
+ZARNITSA (Russian Red Team Agent)
+
+Deliverables 
+
+I Annotated bibliography; research design statement  
+II   System audit memo  
+III   Doctrinal analysis — tactical/operational
+IV   Doctrinal analysis — strategic/institutional
+V   Expanded corpus (~45–50 entries); corpus methodology section  
+VI   Revised personas and cultural assumptions; revision rationale  
+VII   Test protocol; scenario briefs
+VIII   Test results; documentation of errors; SME feedback  
+IX   AI implications analysis (12–15 pp.)  
+X   Final Synthesis; Presentation; polished repository  
+
+Final Paper Outline
+
+1. Abstract
+2. Introduction and Research Questions
+3. Background: AI in Wargaming and Adversary Simulation
+4. System Description: ZARNITSA Architecture and Design
+5. Doctrinal Analysis: Russian Military Doctrine Before and After Ukraine
+   5.1 Tactical and Operational Evolution
+   5.2 Strategic and Institutional Evolution
+6. System Improvement: Corpus and Persona Revision Methodology
+7. Testing and Validation: Protocol, Results, Limitations
+8. Implications of AI-Based Red Teaming
+9. Conclusion
+10. Bibliography
+11. Appendices
+
+
+Full break down
+
+I. Week 1 Research Design & Literature Foundation
+
+- Literature review: AI in wargaming, LLM limits, OPFOR realism requirements, mirror-imaging problem
+- Identify 3–5 SMEs (Russia analysts, wargame facilitators) for Week 8 external review
+	-Ivanka Barzashka-King’s College
+
+II. Week 2 System Baseline Audit
+
+- Audit all 10 persona files: pre-war assumptions, institutional specificity gaps, output format issues
+- Audit all 30 corpus entries
+- Compile 3 known-outcome scenarios (choose from: Feb 24 2022 SVO launch; Sep 2022 partial mobilization; Nov 2022 Kherson withdrawal; Kursk counteroffensive 2024; Kharkiv counteroffensive; 2014 invasion of Crimea) and run base model against scenarios for documentation, document generic/mirror-imaging outputs
+- Identify missing source documents: Putin Feb 24 address, Sep 2024 nuclear deterrence update, Maritime Doctrine, NSS update
+
+Deliverable: Initial System Review (gaps in personas, corpus, agent behavioral response)
+
+III. Week 3 Doctrinal Analysis: Tactical & Operational
+
+- Drone warfare and Russian Unmanned Systems Forces-?????? ??????????? ??????(VBpS): FPV saturation, Lancet employment, Geran/Shahed, EW-drone coevolution, VBpS as service branch (Nov 2025), FPV and fiberoptic, counter-drone warfare
+- initial failure of the invasion: fait de accompli, shift to attrition warfare, assault groups-????????? ?????? adoption, deep strikes over maneuver
+- C2 failures at the Battalion Tactical Group level: general officer casualties, meat grinder tactic, logistics collapse, centralization vs. decentralization implications
+- precision strikes from Ukraine and Russian GPS jamming 
+
+Sources: RUSI; TRADOC G2 ATP 7-100.1; ISW; CSIS; Jamestown; IISS; Carnegie; Modern War Institute-Westpoint
+
+Deliverable: "Tactical and Operational Doctrinal Evolution: Russia Before and after Ukraine"
+
+IV. Week 4 Doctrinal Analysis: Strategic & Institutional
+-national and global strategic goals, specifically in the scope of annexing Ukrainian territory
+- Russian doctrine and operational art before the invasion and throughout the war
+- Sep 2022 partial mobilization: voenkomat failures, ethnic disproportions, Main Organization and Mobilization Directorate of the General Staff (GOMU) failures
+- Private Military Contractors (PMC)/proxy forces post-Wagner: June 2023 mutiny; MoD absorption; current PMC doctrine
+- Information warfare in wartime: Z narrative, Telegram activity (Appendix 1), information control Federal Service for Supervision of Communications, Information Technology and Mass Media (Roskomnadzor-????????????)
+- Civil-military decision-making hierarchy: Security Council role, GS autonomy
+
+Deliverable: Strategic and Institutional Doctrinal Evolution: Russia before and after Ukraine
+
+V. Week 5 — Corpus Refinement
+- Review all 30 entries: fix PDF extraction artifacts, identify pre-war assumptions, tactics, and strategies that require post-Ukraine addenda, tighten broad entries, update keywords/topics
+- Add 15–20 new entries (Appendix 2)
+- Update `scripts/build_corpus.py` for reproducible regeneration; run loader test suite
+-replace keyword search system with a vector embedding model for refined output 
+
+Deliverable: Expanded corpus (45–50 entries); updated build script; "Corpus Methodology" paper section
+
+VI. Week 6 Persona & Prompt Revision + Rerun 
+- Add 11th shared cultural assumption: *Wartime operational identity* — attrition as doctrine, moral authority of wartime sacrifice & narrative, conversion of pre-war information-war-centric doctrine and conventional grinding methods
+- Persona-specific updates:
+  - VBpS: actual Ukraine drone employment patterns, formation experience, institutional standing contest
+  - GRU: wartime intelligence failures, adaptations, milblogger ecosystem as informal input
+  - GOMU: mobilization assumptions revised against Sep 2022 execution
+  - CGS: operational art updated — maneuver-centric ? fires-and-attrition
+  - CINC: wartime personalization, reduced role of institutional staff process
+- Rerun scenarios in MODE 1/MODE 2, compare against Week 2 test results; revise where pipeline produces generic outputs.
+- Document every change with rationale note (? *"Persona Revision Methodology"* section)
+
+Deliverable: Revised persona files and cultural assumptions committed to repo; revision rationale document reflecting changes and research.
+
+VII. Week 7 — Test Protocol Design
+- Define evaluation dimensions: doctrinal grounding, anti-mirror-imaging, operational realism, institutional distinctiveness, wargame utility
+- Write 3 scenario briefs (1–2 pp. each):
+  1. Gray zone: Baltic state domestic unrest, Russian-speaking minority
+  2. Cyber/info: significant offensive cyber op attributed to Russia
+  3. Conventional escalation: NATO Art. 5, Suwalki Gap incident
+  4. Nuclear signaling: adversary approaching stated Russian red line
+  5. Strategic withdrawal: territorial concession with domestic political costs
+  6. Coalition management: Chinese request for coordination on third-region objective
+
+- Write evaluation analysis
+- Design blind review protocol for SME evaluation
+
+Deliverable: Test protocol; 3-6 scenario briefs; evaluation analysis of agent outcome
+
+VIII. Week 8 — Testing, External Review & Iteration
+- Run all 3 scenarios × 3 Wargame Modes (freeplay, predetermined, analytic)
+- Score outputs against rubric; compile results matrix
+- Send 2–3 de-identified outputs to SME reviewers for blind evaluation
+- Identify top 3–5 systematic failure patterns; implement targeted fixes; re-run to confirm
+- Document failure modes and fixes (? "Testing and Validation" section)
+
+Deliverable: Test results; document failures; SME feedback summary (if possible)
+
+IX. Week 9 — Implications Analysis
+- What LLMs can credibly model vs. cannot (intelligence inputs, classified parameters, personality, genuine surprise, human factor)
+-Elaborate on mirror-imaging problem: embedded Western assumptions in LLM training data; how ZARNITSA corrects for it; residual bias
+- AI OPFOR vs. existing approaches: human roleplayers, rule-based systems, manual facilitator injection, when each is appropriate
+- Ethics and distribution: open-source code + gated service model; educational adversary modeling vs. anonymous chatbot distinction
+- Future research: real-time OSINT integration, multi-model debate architecture, embedding-based retrieval, future implications of model usage
+
+Deliverable: Implications and analysis section
+
+X. Week 10 — Synthesis & Final Deliverables
+- Integrate all sections into complete paper; write abstract and executive summary
+- Prepare 20–25 min brief
+- Repository polish: update README, fix pyproject.toml author field, tag `v0.1.0-practicum`
+
+Deliverable: Complete research paper; presentation; final repository
+
+
+
+
+Appendix 1
+
+Telegram Channels
+1. Rybar
+2. Voenny Osvedomitel
+3. Igor Girkin
+4. FIGHTERBOMBER
+5. Wargonzo
+
+
+
+
+Appendix 2
+Entries
+1. Putin Feb 24 2022 SVO address
+2. Sep 2024 nuclear deterrence policy update
+3. VBpS establishment documents and Belousov statements
+4. Ukraine tactical lessons (week 3 & 4)
+5. Wagner/PMC post-mutiny documents
+6. Sep 2022 partial mobilization official statements
+7. Russian National Security Strategy update
+
+
+
+Appendix 3
+Sources
+
+Russian doctrine: 2014 Military Doctrine; 2020/2024 Nuclear Deterrence Policy; Putin Feb 24 2022 address; Gerasimov 2013 VPK article. 
+
+Ukraine lessons-learned: RUSI; TRADOC G2 ATP 7-100.1; ISW analytical updates; Watling & Reynolds "Meatgrinder" (RUSI 2023); General Staff journals ????? ??????? ???????? ???????????? ?????; Military journal ??????? ?????
+
+AI and wargaming:
+1. Should I Use AI in My Wargame? | RAND Stephen M. Worman, Bryan Rooney
+-AI can explore variations on established results and produce data to be analyzed using nongaming methods. Done with well-understood topics and game systems, this use falls into the top-left box.
+- from observing both the outcomes of games and the interactions from players
+-  to “impersonate” an adversary decisionmaker or to replace human interaction—we risk a dangerous mirage of knowledge, and there be dragons.
+2. Understanding the Limits of Artificial Intelligence for Warfighters: Volume 4, Wargames | RAND
+3. Machine Learning for Operational Decisionmaking in Competition and Conflict: A Demonstration Using the Conflict in Eastern Ukraine | RAND 
+4. Wargaming in the Age of AI - Opportunities and Challenges | School of Continuing Studies Events | Georgetown University
+5. Integrating AI and Wargaming: Opportunities and Challenges | Center for Global Security Research
+
+War on the Rocks
+Modern War Institute
+Journal of Defense Modeling and Simulation
+
+Check at library:
+Perla The Art of Wargaming (NIP 1990)
+Scharre Army of None (2018)
+
