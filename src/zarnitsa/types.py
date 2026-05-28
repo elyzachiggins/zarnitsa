@@ -79,7 +79,6 @@ class WargameMode(str, Enum):
     PREDETERMINED = "predetermined"
     ANALYTIC = "analytic"
     STRATEGIC = "strategic"
-    BLUE_TEAM = "blue_team"
 
 
 class CouncilRequest(BaseModel):

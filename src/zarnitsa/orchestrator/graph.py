@@ -79,18 +79,6 @@ _MODE_HEADERS: dict[WargameMode, str] = {
         "(3) highlight incorrect WESTERN ASSUMPTIONS about Russian behavior; "
         "(4) offer INSIGHTS participants may not have considered."
     ),
-    WargameMode.BLUE_TEAM: (
-        "# Wargame mode — BLUE TEAM\n"
-        "You are now analyzing this situation from the perspective of NATO and Western "
-        "alliance decision-making. Set aside the Russian institutional frame. Reason from "
-        "Western strategic frameworks, NATO doctrine, and US/allied national security "
-        "considerations. Your output must: "
-        "(1) describe Western THREAT PERCEPTION of this situation; "
-        "(2) identify NATO/US RESPONSE OPTIONS consistent with Western doctrine; "
-        "(3) assess ESCALATION RISK and escalation management from a Western perspective; "
-        "(4) identify ALLIANCE COHESION factors and divergences among allies; "
-        "(5) recommend a COURSE OF ACTION from the Western perspective."
-    ),
 }
 
 

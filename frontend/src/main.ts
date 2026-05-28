@@ -15,7 +15,6 @@ interface Exchange {
   mode: string;
   turns: PersonaTurn[];
   summary: string;
-  isBlueTeam: boolean;
 }
 
 const PERSONAS: Record<string, { abbr: string; title: string; cinc?: true }> = {
@@ -37,7 +36,6 @@ const MODE_HINTS: Record<string, string> = {
   analytic:      'Commentary — range of options, doctrinal analysis, anti-mirror-imaging',
   freeplay:      'MODE 1 — council determines action from the scenario',
   predetermined: 'MODE 2 — action assigned; council adjudicates rationale and execution',
-  blue_team:     'BLUE TEAM — analyze from NATO/Western alliance perspective',
 };
 
 function esc(s: string): string {
@@ -67,8 +65,8 @@ function renderPersonaCard(turn: PersonaTurn, defaultCollapsed = false): string 
 }
 
 function renderExchange(ex: Exchange, index: number): string {
-  const modeLabel = ex.isBlueTeam ? 'BLUE TEAM' : ex.mode.toUpperCase();
-  const bubbleClass = ex.isBlueTeam ? 'scenario-bubble blue-team' : 'scenario-bubble';
+  const modeLabel = ex.mode.toUpperCase();
+  const bubbleClass = 'scenario-bubble';
   const cards = ex.turns.map((t, i) => renderPersonaCard(t, i > 0)).join('');
   return `
     <div class="exchange" data-index="${index}">
@@ -116,24 +114,21 @@ async function submitScenario(): Promise<void> {
   const modeSelect = document.getElementById('mode') as HTMLSelectElement;
   const cincInput = document.getElementById('cinc-intent') as HTMLInputElement;
   const sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
-  const blueTeamBtn = document.getElementById('blue-team-btn') as HTMLButtonElement;
 
   const scenario = input.value.trim();
   if (!scenario) return;
 
-  const isBlueTeam = blueTeamBtn.classList.contains('active');
-  const mode = isBlueTeam ? 'blue_team' : modeSelect.value;
+  const mode = modeSelect.value;
 
   sendBtn.disabled = true;
   input.value = '';
 
-  // Show loading in history
   const history = document.getElementById('chat-history') as HTMLElement;
   const loadingEl = document.createElement('div');
   loadingEl.className = 'exchange-loading';
   loadingEl.innerHTML = `
-    <div class="scenario-bubble${isBlueTeam ? ' blue-team' : ''}">
-      <span class="bubble-mode">${isBlueTeam ? 'BLUE TEAM' : mode.toUpperCase()}</span>
+    <div class="scenario-bubble">
+      <span class="bubble-mode">${mode.toUpperCase()}</span>
       <span class="bubble-text">${esc(scenario)}</span>
     </div>
     <div class="loading-inline">COUNCIL DELIBERATING <span class="cursor">█</span></div>`;
@@ -190,7 +185,6 @@ async function submitScenario(): Promise<void> {
       mode,
       turns: data.turns,
       summary: data.recommendation?.slice(0, 300) ?? '',
-      isBlueTeam,
     };
     session.push(exchange);
     loadingEl.remove();
@@ -199,13 +193,13 @@ async function submitScenario(): Promise<void> {
   } catch (err) {
     const isTimeout = err instanceof DOMException && err.name === 'AbortError';
     loadingEl.innerHTML = `
-      <div class="scenario-bubble${isBlueTeam ? ' blue-team' : ''}">
+      <div class="scenario-bubble">
         <span class="bubble-mode">${mode.toUpperCase()}</span>
         <span class="bubble-text">${esc(scenario)}</span>
       </div>
       <div class="error-box">
         ${isTimeout ? 'Request timed out — please try again.' : 'Council request failed — please try again.'}
-        <br><span style="font-size:0.75em;opacity:0.7">${esc(err instanceof Error ? err.message : String(err))}</span>
+        <br><span style="font-size:0.75em;opacity:0.7">${esc(String(err instanceof Error ? err.message : err))}</span>
       </div>`;
     scrollToBottom();
   } finally {
@@ -244,9 +238,6 @@ function init(): void {
 
         <label style="margin-top:1.25rem">CINC INTENT <span style="opacity:0.4">(optional)</span></label>
         <input id="cinc-intent" type="text" placeholder="Commander's stated intent...">
-
-        <button id="blue-team-btn" class="blue-team-toggle">🔵 BLUE TEAM</button>
-        <div class="mode-hint">Toggle to analyze from NATO/Western perspective</div>
       </div>
 
       <div class="chat-main">
@@ -266,12 +257,6 @@ function init(): void {
   const modeHint = document.getElementById('mode-hint') as HTMLElement;
   modeSelect.addEventListener('change', () => {
     modeHint.textContent = MODE_HINTS[modeSelect.value] ?? '';
-  });
-
-  // Blue team toggle
-  const blueTeamBtn = document.getElementById('blue-team-btn') as HTMLButtonElement;
-  blueTeamBtn.addEventListener('click', () => {
-    blueTeamBtn.classList.toggle('active');
   });
 
   // Clear session
