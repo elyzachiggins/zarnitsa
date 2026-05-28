@@ -79,6 +79,7 @@ class WargameMode(str, Enum):
     PREDETERMINED = "predetermined"
     ANALYTIC = "analytic"
     STRATEGIC = "strategic"
+    BLUE_TEAM = "blue_team"
 
 
 class CouncilRequest(BaseModel):
@@ -88,6 +89,7 @@ class CouncilRequest(BaseModel):
     cinc_intent: str | None = None
     constraints: list[str] = Field(default_factory=list)
     wargame_mode: WargameMode = WargameMode.STRATEGIC
+    prior_exchanges: list[dict[str, str]] = Field(default_factory=list)
 
 
 class CouncilResponse(BaseModel):

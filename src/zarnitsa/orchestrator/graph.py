@@ -29,8 +29,17 @@ STAGE_4 = [PersonaRole.SINO_LIAISON, PersonaRole.MOD, PersonaRole.SOVBEZ]
 STAGE_5 = [PersonaRole.CINC]
 
 
+_LANGUAGE_INSTRUCTION = (
+    "LANGUAGE: Respond entirely in English. "
+    "Use Russian only for: organization abbreviations (НГШ, ГРУ, МО, ВГК, Совбез, etc.), "
+    "doctrinal terms with no direct English equivalent (маскировка, рефлексивное управление, "
+    "оперативное искусство, etc.), proper nouns, and direct source citations. "
+    "All analysis, reasoning, and recommendations must be written in English."
+)
+
+
 def _compose_system_prompt(persona_system: str) -> str:
-    return f"{CULTURAL_PRIOR}\n\n---\n\n{persona_system}"
+    return f"{_LANGUAGE_INSTRUCTION}\n\n---\n\n{CULTURAL_PRIOR}\n\n---\n\n{persona_system}"
 
 
 def _format_priors(turns: list[PersonaTurn]) -> str:
@@ -70,6 +79,18 @@ _MODE_HEADERS: dict[WargameMode, str] = {
         "(3) highlight incorrect WESTERN ASSUMPTIONS about Russian behavior; "
         "(4) offer INSIGHTS participants may not have considered."
     ),
+    WargameMode.BLUE_TEAM: (
+        "# Wargame mode — BLUE TEAM\n"
+        "You are now analyzing this situation from the perspective of NATO and Western "
+        "alliance decision-making. Set aside the Russian institutional frame. Reason from "
+        "Western strategic frameworks, NATO doctrine, and US/allied national security "
+        "considerations. Your output must: "
+        "(1) describe Western THREAT PERCEPTION of this situation; "
+        "(2) identify NATO/US RESPONSE OPTIONS consistent with Western doctrine; "
+        "(3) assess ESCALATION RISK and escalation management from a Western perspective; "
+        "(4) identify ALLIANCE COHESION factors and divergences among allies; "
+        "(5) recommend a COURSE OF ACTION from the Western perspective."
+    ),
 }
 
 
@@ -84,7 +105,14 @@ async def _run_persona(
     priors: list[PersonaTurn],
 ) -> PersonaTurn:
     priors_text = _format_priors(priors)
-    user_msg_parts = [f"# Scenario\n\n{request.scenario}"]
+    user_msg_parts = []
+    if request.prior_exchanges:
+        history = "\n\n".join(
+            f"[Prior exchange {i+1}]\nScenario: {ex.get('scenario','')}\nSummary: {ex.get('summary','')}"
+            for i, ex in enumerate(request.prior_exchanges[-3:])
+        )
+        user_msg_parts.append(f"# Session history (for context)\n\n{history}")
+    user_msg_parts.append(f"# Scenario\n\n{request.scenario}")
     if request.cinc_intent:
         user_msg_parts.append(f"# CinC stated intent\n\n{request.cinc_intent}")
     if request.constraints:

@@ -2,39 +2,34 @@ import './style.css';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
-interface Citation {
-  entry_id: string;
-  tier: string;
-  snippet: string;
-}
-
-interface PersonaTurn {
-  persona: string;
-  content: string;
-  citations: Citation[];
-  confidence: number | null;
-}
-
+interface Citation { entry_id: string; tier: string; snippet: string; }
+interface PersonaTurn { persona: string; content: string; citations: Citation[]; }
 interface CouncilResponse {
   recommendation: string;
   courses_of_action: string[];
   dissents: string[];
   turns: PersonaTurn[];
-  knowledge_horizon: string | null;
+}
+interface Exchange {
+  scenario: string;
+  mode: string;
+  turns: PersonaTurn[];
+  summary: string;
+  isBlueTeam: boolean;
 }
 
 const PERSONAS: Record<string, { abbr: string; title: string; cinc?: true }> = {
-  commander_in_chief:            { abbr: 'ВГК',  title: 'Commander-in-Chief', cinc: true },
-  chief_of_general_staff:        { abbr: 'НГШ',  title: 'Chief of the General Staff' },
-  main_operations_directorate:   { abbr: 'НГОУ', title: 'Main Operations Directorate' },
-  main_org_mob_directorate:      { abbr: 'НГОМУ',title: 'Main Org-Mobilization Directorate' },
-  center_military_strategic:     { abbr: 'ЦВСИ', title: 'Center for Military-Strategic Studies' },
-  main_intelligence_directorate: { abbr: 'ГРУ',  title: 'Military Intelligence Directorate' },
-  unmanned_systems_forces:       { abbr: 'ВБпС', title: 'Unmanned Systems Forces' },
-  minister_of_defense:           { abbr: 'МО',   title: 'Minister of Defense' },
-  sino_russian_liaison:          { abbr: '中俄',  title: 'Sino-Russian Strategic Liaison' },
-  economic_advisor:              { abbr: 'ЭС',   title: 'Economic Advisor' },
-  security_council:              { abbr: 'СовБез', title: 'Security Council of the Russian Federation' },
+  commander_in_chief:            { abbr: 'ВГК',    title: 'Commander-in-Chief', cinc: true },
+  chief_of_general_staff:        { abbr: 'НГШ',    title: 'Chief of the General Staff' },
+  main_operations_directorate:   { abbr: 'НГОУ',   title: 'Main Operations Directorate' },
+  main_org_mob_directorate:      { abbr: 'НГОМУ',  title: 'Main Org-Mobilization Directorate' },
+  center_military_strategic:     { abbr: 'ЦВСИ',   title: 'Center for Military-Strategic Studies' },
+  main_intelligence_directorate: { abbr: 'ГРУ',    title: 'Military Intelligence Directorate' },
+  unmanned_systems_forces:       { abbr: 'ВБпС',   title: 'Unmanned Systems Forces' },
+  minister_of_defense:           { abbr: 'МО',     title: 'Minister of Defense' },
+  security_council:              { abbr: 'СовБез', title: 'Security Council' },
+  sino_russian_liaison:          { abbr: '中俄',    title: 'Sino-Russian Strategic Liaison' },
+  economic_advisor:              { abbr: 'ЭС',     title: 'Economic Advisor' },
 };
 
 const MODE_HINTS: Record<string, string> = {
@@ -42,15 +37,19 @@ const MODE_HINTS: Record<string, string> = {
   analytic:      'Commentary — range of options, doctrinal analysis, anti-mirror-imaging',
   freeplay:      'MODE 1 — council determines action from the scenario',
   predetermined: 'MODE 2 — action assigned; council adjudicates rationale and execution',
+  blue_team:     'BLUE TEAM — analyze from NATO/Western alliance perspective',
 };
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function renderPersonaCard(turn: PersonaTurn): string {
+// Session state
+const session: Exchange[] = [];
+
+function renderPersonaCard(turn: PersonaTurn, defaultCollapsed = false): string {
   const meta = PERSONAS[turn.persona] ?? { abbr: turn.persona.slice(0, 6).toUpperCase(), title: turn.persona };
-  const citations = turn.citations.length
+  const citations = turn.citations?.length
     ? `<div class="citations">${turn.citations.map(c =>
         `<span class="citation-tag">${esc(c.entry_id)} · ${esc(c.tier)}</span>`
       ).join('')}</div>`
@@ -60,66 +59,109 @@ function renderPersonaCard(turn: PersonaTurn): string {
       <div class="persona-header">
         <span class="persona-abbr">${meta.abbr}</span>
         <span class="persona-title">${esc(meta.title)}</span>
-        <span class="persona-toggle">▲</span>
+        <span class="persona-toggle">${defaultCollapsed ? '▼' : '▲'}</span>
       </div>
-      <div class="persona-body">${esc(turn.content)}</div>
+      <div class="persona-body${defaultCollapsed ? ' collapsed' : ''}">${esc(turn.content)}</div>
       ${citations}
     </div>`;
 }
 
-function renderSummary(data: CouncilResponse, mode: string): string {
-  if (!data.recommendation && !data.courses_of_action.length && !data.dissents.length) return '';
-  const coas = data.courses_of_action.length
-    ? `<div class="list-label">COURSES OF ACTION</div>
-       <ul class="item-list">${data.courses_of_action.map(c => `<li>${esc(c)}</li>`).join('')}</ul>`
-    : '';
-  const dissents = data.dissents.length
-    ? `<div class="list-label">DISSENTS</div>
-       <ul class="item-list dissent">${data.dissents.map(d => `<li>${esc(d)}</li>`).join('')}</ul>`
-    : '';
+function renderExchange(ex: Exchange, index: number): string {
+  const modeLabel = ex.isBlueTeam ? 'BLUE TEAM' : ex.mode.toUpperCase();
+  const bubbleClass = ex.isBlueTeam ? 'scenario-bubble blue-team' : 'scenario-bubble';
+  const cards = ex.turns.map((t, i) => renderPersonaCard(t, i > 0)).join('');
   return `
-    <div class="council-summary">
-      <h2>COUNCIL OUTPUT · ${mode.toUpperCase()}</h2>
-      ${data.recommendation ? `<p>${esc(data.recommendation)}</p>` : ''}
-      ${coas}${dissents}
+    <div class="exchange" data-index="${index}">
+      <div class="${bubbleClass}">
+        <span class="bubble-mode">${modeLabel}</span>
+        <span class="bubble-text">${esc(ex.scenario)}</span>
+      </div>
+      <div class="council-turns">${cards}</div>
     </div>`;
 }
 
-async function handleSubmit(): Promise<void> {
-  const scenario = (document.getElementById('scenario') as HTMLTextAreaElement).value.trim();
-  const cincIntent = (document.getElementById('cinc-intent') as HTMLInputElement).value.trim();
-  const mode = (document.getElementById('mode') as HTMLSelectElement).value;
-  const panel = document.getElementById('response-panel') as HTMLElement;
-  const btn = document.getElementById('submit') as HTMLButtonElement;
+function scrollToBottom(): void {
+  const history = document.getElementById('chat-history');
+  if (history) history.scrollTop = history.scrollHeight;
+}
 
-  if (!scenario) {
-    panel.innerHTML = `<div class="error-box">Scenario text is required.</div>`;
+function attachCardToggles(container: HTMLElement): void {
+  container.querySelectorAll<HTMLElement>('.persona-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const body = header.nextElementSibling as HTMLElement;
+      const toggle = header.querySelector('.persona-toggle') as HTMLElement;
+      const collapsed = body.classList.toggle('collapsed');
+      toggle.textContent = collapsed ? '▼' : '▲';
+    });
+  });
+}
+
+function renderHistory(): void {
+  const history = document.getElementById('chat-history') as HTMLElement;
+  if (session.length === 0) {
+    history.innerHTML = `
+      <div class="empty-state">
+        <div>COUNCIL STANDING BY</div>
+        <div style="font-size:0.72rem;margin-top:0.5rem;color:var(--text-dim)">Enter a scenario below to convene deliberation</div>
+      </div>`;
     return;
   }
+  history.innerHTML = session.map(renderExchange).join('');
+  attachCardToggles(history);
+  scrollToBottom();
+}
 
-  btn.disabled = true;
+async function submitScenario(): Promise<void> {
+  const input = document.getElementById('chat-input') as HTMLTextAreaElement;
+  const modeSelect = document.getElementById('mode') as HTMLSelectElement;
+  const cincInput = document.getElementById('cinc-intent') as HTMLInputElement;
+  const sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
+  const blueTeamBtn = document.getElementById('blue-team-btn') as HTMLButtonElement;
 
-  const updateStatus = (msg: string) => {
-    panel.innerHTML = `
-      <div class="loading">
-        <div>${msg} <span class="cursor">█</span></div>
-        <div class="loading-scenario">${esc(scenario.slice(0, 140))}${scenario.length > 140 ? '…' : ''}</div>
-      </div>`;
-  };
+  const scenario = input.value.trim();
+  if (!scenario) return;
 
-  updateStatus('COUNCIL IN DELIBERATION');
+  const isBlueTeam = blueTeamBtn.classList.contains('active');
+  const mode = isBlueTeam ? 'blue_team' : modeSelect.value;
+
+  sendBtn.disabled = true;
+  input.value = '';
+
+  // Show loading in history
+  const history = document.getElementById('chat-history') as HTMLElement;
+  const loadingEl = document.createElement('div');
+  loadingEl.className = 'exchange-loading';
+  loadingEl.innerHTML = `
+    <div class="scenario-bubble${isBlueTeam ? ' blue-team' : ''}">
+      <span class="bubble-mode">${isBlueTeam ? 'BLUE TEAM' : mode.toUpperCase()}</span>
+      <span class="bubble-text">${esc(scenario)}</span>
+    </div>
+    <div class="loading-inline">COUNCIL DELIBERATING <span class="cursor">█</span></div>`;
+  history.appendChild(loadingEl);
+  scrollToBottom();
 
   try {
-    const body: Record<string, unknown> = { scenario, wargame_mode: mode };
-    if (cincIntent) body.cinc_intent = cincIntent;
+    const priorExchanges = session.slice(-3).map(ex => ({
+      scenario: ex.scenario,
+      summary: ex.summary,
+    }));
 
-    // Wake the backend first — if it's cold-starting this can take ~30s
+    const body: Record<string, unknown> = {
+      scenario,
+      wargame_mode: mode,
+      prior_exchanges: priorExchanges,
+    };
+    const cinc = cincInput.value.trim();
+    if (cinc) body.cinc_intent = cinc;
+
     let wakeTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-      updateStatus('BACKEND WAKING UP — PLEASE WAIT');
+      const li = loadingEl.querySelector('.loading-inline');
+      if (li) li.innerHTML = 'BACKEND WAKING UP — PLEASE WAIT <span class="cursor">█</span>';
     }, 8000);
 
     const deliberationTimer = setTimeout(() => {
-      updateStatus('PERSONAS DELIBERATING — THIS MAY TAKE 2–3 MINUTES');
+      const li = loadingEl.querySelector('.loading-inline');
+      if (li) li.innerHTML = 'PERSONAS DELIBERATING — 2–3 MINUTES <span class="cursor">█</span>';
     }, 20000);
 
     const controller = new AbortController();
@@ -140,37 +182,35 @@ async function handleSubmit(): Promise<void> {
       wakeTimer = null;
     }
 
-    if (!res.ok) {
-      throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`);
-    }
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`);
 
     const data: CouncilResponse = await res.json();
-    panel.innerHTML =
-      renderSummary(data, mode) +
-      (data.turns.length
-        ? `<div class="council-turns">${data.turns.map(renderPersonaCard).join('')}</div>`
-        : '<div class="loading">No persona responses returned.</div>');
-
-    panel.querySelectorAll<HTMLElement>('.persona-header').forEach(header => {
-      header.addEventListener('click', () => {
-        const body = header.nextElementSibling as HTMLElement;
-        const toggle = header.querySelector('.persona-toggle') as HTMLElement;
-        const collapsed = body.classList.toggle('collapsed');
-        toggle.textContent = collapsed ? '▼' : '▲';
-      });
-    });
+    const exchange: Exchange = {
+      scenario,
+      mode,
+      turns: data.turns,
+      summary: data.recommendation?.slice(0, 300) ?? '',
+      isBlueTeam,
+    };
+    session.push(exchange);
+    loadingEl.remove();
+    renderHistory();
 
   } catch (err) {
     const isTimeout = err instanceof DOMException && err.name === 'AbortError';
-    panel.innerHTML = `
+    loadingEl.innerHTML = `
+      <div class="scenario-bubble${isBlueTeam ? ' blue-team' : ''}">
+        <span class="bubble-mode">${mode.toUpperCase()}</span>
+        <span class="bubble-text">${esc(scenario)}</span>
+      </div>
       <div class="error-box">
-        ${isTimeout
-          ? 'Request timed out (5 min). The council may be overloaded — please try again.'
-          : 'Council request failed. Please try again in a moment.'}
-        <br><span style="font-size:0.78em;opacity:0.8">${esc(err instanceof Error ? err.message : String(err))}</span>
+        ${isTimeout ? 'Request timed out — please try again.' : 'Council request failed — please try again.'}
+        <br><span style="font-size:0.75em;opacity:0.7">${esc(err instanceof Error ? err.message : String(err))}</span>
       </div>`;
+    scrollToBottom();
   } finally {
-    btn.disabled = false;
+    sendBtn.disabled = false;
+    input.focus();
   }
 }
 
@@ -182,49 +222,77 @@ function init(): void {
     <div class="banner">UNCLASSIFIED // EDUCATIONAL USE ONLY // ADVERSARY MODELING SYSTEM</div>
 
     <header>
-      <div>
+      <div class="header-left">
         <div class="logo">ЗАРНИЦА · ZARNITSA</div>
         <div class="logo-sub">Russian Red Team Agent · Research Prototype · v0.1</div>
       </div>
+      <div class="header-controls">
+        <button id="clear-btn" class="ctrl-btn">CLEAR SESSION</button>
+      </div>
     </header>
 
-    <main>
-      <section class="input-panel">
-        <div class="form-group">
-          <label>SCENARIO</label>
-          <textarea id="scenario" placeholder="Describe the operational or strategic scenario for council deliberation..."></textarea>
-        </div>
-        <div class="form-group">
-          <label>CINC INTENT <span style="opacity:0.5">(optional)</span></label>
-          <input id="cinc-intent" type="text" placeholder="Commander's stated intent or political objective...">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>WARGAME MODE</label>
-            <select id="mode">
-              <option value="strategic">STRATEGIC</option>
-              <option value="analytic">ANALYTIC</option>
-              <option value="freeplay">FREEPLAY — MODE 1</option>
-              <option value="predetermined">PREDETERMINED — MODE 2</option>
-            </select>
-            <div class="mode-hint" id="mode-hint">${MODE_HINTS['strategic']}</div>
-          </div>
-          <button id="submit">CONVENE COUNCIL</button>
-        </div>
-      </section>
+    <div class="chat-layout">
+      <div class="sidebar">
+        <label>MODE</label>
+        <select id="mode">
+          <option value="strategic">STRATEGIC</option>
+          <option value="analytic">ANALYTIC</option>
+          <option value="freeplay">FREEPLAY — MODE 1</option>
+          <option value="predetermined">PREDETERMINED — MODE 2</option>
+        </select>
+        <div class="mode-hint" id="mode-hint">${MODE_HINTS['strategic']}</div>
 
-      <div id="response-panel"></div>
-    </main>
+        <label style="margin-top:1.25rem">CINC INTENT <span style="opacity:0.4">(optional)</span></label>
+        <input id="cinc-intent" type="text" placeholder="Commander's stated intent...">
+
+        <button id="blue-team-btn" class="blue-team-toggle">🔵 BLUE TEAM</button>
+        <div class="mode-hint">Toggle to analyze from NATO/Western perspective</div>
+      </div>
+
+      <div class="chat-main">
+        <div id="chat-history" class="chat-history"></div>
+
+        <div class="chat-input-area">
+          <textarea id="chat-input" placeholder="Enter scenario or follow-up question..." rows="3"></textarea>
+          <button id="send-btn">SEND</button>
+        </div>
+      </div>
+    </div>
 
     <footer>ZARNITSA · Unclassified · For Professional Military Education and Research Use Only</footer>`;
 
+  // Mode hint
   const modeSelect = document.getElementById('mode') as HTMLSelectElement;
   const modeHint = document.getElementById('mode-hint') as HTMLElement;
   modeSelect.addEventListener('change', () => {
     modeHint.textContent = MODE_HINTS[modeSelect.value] ?? '';
   });
 
-  document.getElementById('submit')!.addEventListener('click', () => { void handleSubmit(); });
+  // Blue team toggle
+  const blueTeamBtn = document.getElementById('blue-team-btn') as HTMLButtonElement;
+  blueTeamBtn.addEventListener('click', () => {
+    blueTeamBtn.classList.toggle('active');
+  });
+
+  // Clear session
+  document.getElementById('clear-btn')!.addEventListener('click', () => {
+    session.length = 0;
+    renderHistory();
+  });
+
+  // Send
+  document.getElementById('send-btn')!.addEventListener('click', () => { void submitScenario(); });
+
+  // Enter to send (Shift+Enter for newline)
+  const chatInput = document.getElementById('chat-input') as HTMLTextAreaElement;
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      void submitScenario();
+    }
+  });
+
+  renderHistory();
 }
 
 init();
