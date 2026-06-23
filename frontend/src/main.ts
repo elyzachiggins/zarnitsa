@@ -18,17 +18,11 @@ interface Exchange {
 }
 
 const PERSONAS: Record<string, { abbr: string; title: string; cinc?: true }> = {
-  commander_in_chief:            { abbr: 'ВГК',    title: 'Commander-in-Chief', cinc: true },
-  chief_of_general_staff:        { abbr: 'НГШ',    title: 'Chief of the General Staff' },
-  main_operations_directorate:   { abbr: 'НГОУ',   title: 'Main Operations Directorate' },
-  main_org_mob_directorate:      { abbr: 'НГОМУ',  title: 'Main Org-Mobilization Directorate' },
-  center_military_strategic:     { abbr: 'ЦВСИ',   title: 'Center for Military-Strategic Studies' },
-  main_intelligence_directorate: { abbr: 'ГРУ',    title: 'Military Intelligence Directorate' },
-  unmanned_systems_forces:       { abbr: 'ВБпС',   title: 'Unmanned Systems Forces' },
+  main_intelligence_directorate: { abbr: 'ГРУ',    title: 'Main Intelligence Directorate' },
   minister_of_defense:           { abbr: 'МО',     title: 'Minister of Defense' },
+  chief_of_general_staff:        { abbr: 'НГШ',    title: 'Chief of the General Staff' },
   security_council:              { abbr: 'СовБез', title: 'Security Council' },
-  sino_russian_liaison:          { abbr: '中俄',    title: 'Sino-Russian Strategic Liaison' },
-  economic_advisor:              { abbr: 'ЭС',     title: 'Economic Advisor' },
+  commander_in_chief:            { abbr: 'ВГК',    title: 'Commander-in-Chief', cinc: true },
 };
 
 const MODE_HINTS: Record<string, string> = {

@@ -25,19 +25,20 @@ class SourceTier(str, Enum):
 
 
 class PersonaRole(str, Enum):
-    """The institutional roles modeled in the council."""
+    """The institutional roles modeled in the council.
 
-    CGS = "chief_of_general_staff"            # НГШ
-    GOU = "main_operations_directorate"       # НГОУ
-    GOMU = "main_org_mob_directorate"         # НГОМУ
-    TSVSI = "center_military_strategic"       # ЦВСИ
-    GRU = "main_intelligence_directorate"     # ГРУ
-    VBPS = "unmanned_systems_forces"          # ВБпС
-    MOD = "minister_of_defense"               # МО
-    CINC = "commander_in_chief"               # ВГК
-    SINO_LIAISON = "sino_russian_liaison"     # advisor
-    ECON_ADVISOR = "economic_advisor"         # advisor
+    Five-seat deliberating council reflecting the actual Russian decision-making apparatus:
+        Stage 1 — GRU (intel brief, informs all subsequent stages)
+        Stage 2 — MOD + CGS (parallel: war-economy/procurement and operational planning)
+        Stage 3 — SOVBEZ (political-security synthesis, sees Stages 1+2)
+        Stage 4 — CINC (strategic vector and authorization, sees everything)
+    """
+
+    GRU = "main_intelligence_directorate"    # ГРУ / ГУ ГШ
+    MOD = "minister_of_defense"              # МО
+    CGS = "chief_of_general_staff"           # НГШ (triple-hatted: CGS + First Deputy MoD + ОГВ commander)
     SOVBEZ = "security_council"              # Совбез
+    CINC = "commander_in_chief"              # ВГК
 
 
 class ChatMessage(BaseModel):

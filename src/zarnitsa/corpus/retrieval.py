@@ -30,9 +30,19 @@ class Retriever:
         for e in self.entries:
             if tier_floor and self._tier_rank(e.tier) < self._tier_rank(tier_floor):
                 continue
+            # Keyword overlap (Russian keywords in corpus)
             overlap = len(tokens & {kw.lower() for kw in e.keywords})
+            # Content hits (any language)
             content_hits = sum(1 for t in tokens if t in e.content.lower())
-            score = overlap * 2 + content_hits
+            # Topic hits — topics are English snake_case (e.g. "nuclear_deterrence")
+            # Check if any query token is a substring of any topic string
+            topic_hits = sum(
+                1 for t in tokens
+                if any(t in topic.lower() for topic in e.topics)
+            )
+            # Title hits — English titles for Russian-content entries
+            title_hits = sum(1 for t in tokens if t in e.title.lower())
+            score = overlap * 2 + content_hits + topic_hits * 2 + title_hits
             if score > 0:
                 scored.append((e, float(score)))
         scored.sort(key=lambda x: x[1], reverse=True)

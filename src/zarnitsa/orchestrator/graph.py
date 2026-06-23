@@ -1,18 +1,20 @@
 """Council deliberation DAG.
 
 Staged parallel execution:
-    Stage 1: GRU  (intel assessment — all subsequent stages see this)
-    Stage 2: GOU, GOMU, VBpS, TsVSI, Econ  (parallel specialist tier)
-    Stage 3: CGS  (synthesis — sees all of stage 1+2)
-    Stage 4: Sino liaison, MoD  (parallel political-military review)
-    Stage 5: CinC  (strategic vector, red lines, authorization — sees everything)
+    Stage 1: GRU       (intel brief — all subsequent stages see this)
+    Stage 2: MOD, CGS  (parallel: war-economy/procurement + operational planning)
+    Stage 3: SOVBEZ    (political-security synthesis — sees Stages 1+2)
+    Stage 4: CINC      (strategic vector, red lines, authorization — sees everything)
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import TYPE_CHECKING, Any
 
+from zarnitsa.corpus.entry import CorpusEntry
+from zarnitsa.corpus.retrieval import Retriever
 from zarnitsa.orchestrator.cultural_prior import CULTURAL_PRIOR
 from zarnitsa.personas import load_personas
 from zarnitsa.personas.loader import Persona
@@ -22,11 +24,45 @@ from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole, Persona
 if TYPE_CHECKING:
     from zarnitsa.providers.base import BaseProvider
 
+log = logging.getLogger(__name__)
+
+# Module-level singleton — corpus loads once on first request, not on every call.
+_retriever: Retriever | None = None
+
+
+def _get_retriever() -> Retriever:
+    global _retriever
+    if _retriever is None:
+        _retriever = Retriever()
+        log.info("Corpus retriever initialised: %d entries loaded", len(_retriever.entries))
+    return _retriever
+
+
+def _format_corpus_context(results: list[tuple[CorpusEntry, float]]) -> str:
+    if not results:
+        return ""
+    blocks = []
+    for entry, _score in results:
+        snippet = entry.content[:700].rstrip()
+        if len(entry.content) > 700:
+            snippet += "…"
+        blocks.append(
+            f"[{entry.tier.value.upper()} | {entry.id}]\n"
+            f"**{entry.title}**\n\n"
+            f"{snippet}"
+        )
+    return (
+        "# Corpus — retrieved grounding material\n\n"
+        "The following entries are drawn from the verified doctrine and source corpus. "
+        "Ground your analysis in this material where relevant. "
+        "When you cite an entry, reference its entry_id.\n\n"
+        + "\n\n---\n\n".join(blocks)
+    )
+
 STAGE_1 = [PersonaRole.GRU]
-STAGE_2 = [PersonaRole.GOU, PersonaRole.GOMU, PersonaRole.VBPS, PersonaRole.TSVSI, PersonaRole.ECON_ADVISOR]
-STAGE_3 = [PersonaRole.CGS]
-STAGE_4 = [PersonaRole.SINO_LIAISON, PersonaRole.MOD, PersonaRole.SOVBEZ]
-STAGE_5 = [PersonaRole.CINC]
+STAGE_2 = [PersonaRole.MOD, PersonaRole.CGS]
+STAGE_3 = [PersonaRole.SOVBEZ]
+STAGE_4 = [PersonaRole.CINC]
 
 
 _LANGUAGE_INSTRUCTION = (
@@ -105,6 +141,15 @@ async def _run_persona(
         user_msg_parts.append(f"# CinC stated intent\n\n{request.cinc_intent}")
     if request.constraints:
         user_msg_parts.append("# Constraints\n\n" + "\n".join(f"- {c}" for c in request.constraints))
+
+    try:
+        corpus_results = _get_retriever().search(request.scenario, top_k=6)
+        corpus_context = _format_corpus_context(corpus_results)
+        if corpus_context:
+            user_msg_parts.append(corpus_context)
+    except Exception:
+        log.exception("Corpus retrieval failed for persona %s — proceeding without grounding", persona.role)
+
     if priors_text:
         user_msg_parts.append(priors_text)
     mode_instruction = _mode_instruction(request.wargame_mode, persona.role)
@@ -149,7 +194,7 @@ async def run_council(
     personas = {p.role: p for p in load_personas()}
     all_turns: list[PersonaTurn] = []
 
-    for stage in [STAGE_1, STAGE_2, STAGE_3, STAGE_4, STAGE_5]:
+    for stage in [STAGE_1, STAGE_2, STAGE_3, STAGE_4]:
         stage_turns = await _run_stage(prov, stage, personas, request, all_turns)
         all_turns.extend(stage_turns)
 
