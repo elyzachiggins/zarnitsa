@@ -103,6 +103,13 @@ function renderHistory(): void {
   scrollToBottom();
 }
 
+const STAGE_STATUS: Record<number, string> = {
+  1: 'МО · НГШ DELIBERATING IN PARALLEL <span class="cursor">█</span>',
+  2: 'МО · НГШ DELIBERATING IN PARALLEL <span class="cursor">█</span>',
+  3: 'СОВБЕЗ SYNTHESIZING <span class="cursor">█</span>',
+  4: 'ВГК RENDERING FINAL DECISION <span class="cursor">█</span>',
+};
+
 async function submitScenario(): Promise<void> {
   const input = document.getElementById('chat-input') as HTMLTextAreaElement;
   const modeSelect = document.getElementById('mode') as HTMLSelectElement;
@@ -117,17 +124,25 @@ async function submitScenario(): Promise<void> {
   sendBtn.disabled = true;
   input.value = '';
 
-  const history = document.getElementById('chat-history') as HTMLElement;
-  const loadingEl = document.createElement('div');
-  loadingEl.className = 'exchange-loading';
-  loadingEl.innerHTML = `
+  const chatHistory = document.getElementById('chat-history') as HTMLElement;
+
+  // Build the exchange container that grows as turns arrive
+  const exchangeEl = document.createElement('div');
+  exchangeEl.className = 'exchange exchange-loading';
+  exchangeEl.innerHTML = `
     <div class="scenario-bubble">
       <span class="bubble-mode">${mode.toUpperCase()}</span>
       <span class="bubble-text">${esc(scenario)}</span>
     </div>
-    <div class="loading-inline">COUNCIL DELIBERATING <span class="cursor">█</span></div>`;
-  history.appendChild(loadingEl);
+    <div class="loading-inline" id="stream-status">COUNCIL CONVENING <span class="cursor">█</span></div>
+    <div class="council-turns" id="stream-turns"></div>`;
+  chatHistory.appendChild(exchangeEl);
   scrollToBottom();
+
+  const statusEl = exchangeEl.querySelector('#stream-status') as HTMLElement;
+  const turnsEl = exchangeEl.querySelector('#stream-turns') as HTMLElement;
+
+  const turns: PersonaTurn[] = [];
 
   try {
     const priorExchanges = session.slice(-3).map(ex => ({
@@ -143,58 +158,87 @@ async function submitScenario(): Promise<void> {
     const cinc = cincInput.value.trim();
     if (cinc) body.cinc_intent = cinc;
 
-    let wakeTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-      const li = loadingEl.querySelector('.loading-inline');
-      if (li) li.innerHTML = 'BACKEND WAKING UP — PLEASE WAIT <span class="cursor">█</span>';
+    const controller = new AbortController();
+    const hardTimeout = setTimeout(() => controller.abort(), 600000);
+
+    // Wake-up notice if backend is cold
+    const wakeTimer = setTimeout(() => {
+      if (turns.length === 0) statusEl.innerHTML = 'BACKEND WAKING UP — PLEASE WAIT <span class="cursor">█</span>';
     }, 8000);
 
-    const deliberationTimer = setTimeout(() => {
-      const li = loadingEl.querySelector('.loading-inline');
-      if (li) li.innerHTML = 'COUNCIL DELIBERATING — 5–7 MINUTES FOR FULL OUTPUT <span class="cursor">█</span>';
-    }, 20000);
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 600000);
-
-    let res: Response;
     try {
-      res = await fetch(`${API_BASE}/v1/council`, {
+      const res = await fetch(`${API_BASE}/v1/council/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
         signal: controller.signal,
       });
+
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`);
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      outer: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE events are separated by \n\n
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() ?? '';
+
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith('data: ')) continue;
+          const data = JSON.parse(line.slice(6)) as { type: string; turn?: PersonaTurn; message?: string };
+
+          if (data.type === 'turn' && data.turn) {
+            turns.push(data.turn);
+            // Append card immediately — first card expanded, rest collapsed
+            const cardHtml = renderPersonaCard(data.turn, turns.length > 1);
+            const tmp = document.createElement('div');
+            tmp.innerHTML = cardHtml.trim();
+            const card = tmp.firstElementChild as HTMLElement;
+            turnsEl.appendChild(card);
+            attachCardToggles(card);
+            // Update status to reflect next stage
+            const nextStatus = STAGE_STATUS[turns.length];
+            if (nextStatus) statusEl.innerHTML = nextStatus;
+            scrollToBottom();
+          } else if (data.type === 'done') {
+            break outer;
+          } else if (data.type === 'error') {
+            throw new Error(data.message ?? 'Unknown server error');
+          }
+        }
+      }
     } finally {
-      clearTimeout(timeout);
-      clearTimeout(deliberationTimer);
-      if (wakeTimer) clearTimeout(wakeTimer);
-      wakeTimer = null;
+      clearTimeout(hardTimeout);
+      clearTimeout(wakeTimer);
     }
 
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`);
-
-    const data: CouncilResponse = await res.json();
+    // Finalise — replace loading container with a clean exchange entry
     const exchange: Exchange = {
       scenario,
       mode,
-      turns: data.turns,
-      summary: data.recommendation?.slice(0, 300) ?? '',
+      turns,
+      summary: turns.find(t => t.persona === 'commander_in_chief')?.content?.slice(0, 300) ?? '',
     };
     session.push(exchange);
-    loadingEl.remove();
-    renderHistory();
+    exchangeEl.classList.remove('exchange-loading');
+    statusEl.remove();
+    attachCardToggles(exchangeEl);
 
   } catch (err) {
-    const isTimeout = err instanceof DOMException && err.name === 'AbortError';
-    loadingEl.innerHTML = `
-      <div class="scenario-bubble">
-        <span class="bubble-mode">${mode.toUpperCase()}</span>
-        <span class="bubble-text">${esc(scenario)}</span>
-      </div>
-      <div class="error-box">
-        ${isTimeout ? 'Request timed out — please try again.' : 'Council request failed — please try again.'}
-        <br><span style="font-size:0.75em;opacity:0.7">${esc(String(err instanceof Error ? err.message : err))}</span>
-      </div>`;
+    const isAbort = err instanceof DOMException && err.name === 'AbortError';
+    statusEl.remove();
+    const errBox = document.createElement('div');
+    errBox.className = 'error-box';
+    errBox.innerHTML = `${isAbort ? 'Request timed out — please try again.' : 'Council request failed — please try again.'}
+      <br><span style="font-size:0.75em;opacity:0.7">${esc(String(err instanceof Error ? err.message : err))}</span>`;
+    exchangeEl.appendChild(errBox);
     scrollToBottom();
   } finally {
     sendBtn.disabled = false;

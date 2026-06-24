@@ -192,6 +192,23 @@ async def _run_stage(
     return list(results)
 
 
+async def run_council_streaming(
+    request: CouncilRequest,
+    *,
+    provider: BaseProvider | None = None,
+):
+    """Yield PersonaTurn objects as each deliberation stage completes."""
+    prov = provider or get_provider()
+    personas = {p.role: p for p in load_personas()}
+    all_turns: list[PersonaTurn] = []
+
+    for stage in [STAGE_1, STAGE_2, STAGE_3, STAGE_4]:
+        stage_turns = await _run_stage(prov, stage, personas, request, all_turns)
+        all_turns.extend(stage_turns)
+        for turn in stage_turns:
+            yield turn
+
+
 async def run_council(
     request: CouncilRequest,
     *,

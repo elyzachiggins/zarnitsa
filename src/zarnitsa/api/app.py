@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from zarnitsa import __version__
 from zarnitsa.api.schemas import (
@@ -14,7 +17,7 @@ from zarnitsa.api.schemas import (
     OAIUsage,
 )
 from zarnitsa.exceptions import PersonaError, ProviderError
-from zarnitsa.orchestrator import CULTURAL_PRIOR, run_council
+from zarnitsa.orchestrator import CULTURAL_PRIOR, run_council, run_council_streaming
 from zarnitsa.personas import load_persona, load_personas
 from zarnitsa.providers import ProviderMessage, get_provider
 from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole, WargameMode
@@ -109,6 +112,33 @@ async def council_deliberate(req: CouncilRequest) -> CouncilResponse:
         return await run_council(req)
     except (PersonaError, ProviderError) as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/v1/council/stream")
+async def council_stream(req: CouncilRequest) -> StreamingResponse:
+    """SSE stream — emits each PersonaTurn as JSON the moment it finishes.
+
+    Event shape:  data: {"type": "turn", "turn": {...PersonaTurn...}}\n\n
+    Final event:  data: {"type": "done"}\n\n
+    Error event:  data: {"type": "error", "message": "..."}\n\n
+    """
+    async def generate():
+        try:
+            async for turn in run_council_streaming(req):
+                payload = json.dumps({"type": "turn", "turn": turn.model_dump(mode="json")})
+                yield f"data: {payload}\n\n"
+            yield 'data: {"type": "done"}\n\n'
+        except (PersonaError, ProviderError) as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # prevent nginx/Render proxy buffering
+        },
+    )
 
 
 @app.post("/v1/corpus/search")
