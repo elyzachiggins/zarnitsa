@@ -150,11 +150,11 @@ async function submitScenario(): Promise<void> {
 
     const deliberationTimer = setTimeout(() => {
       const li = loadingEl.querySelector('.loading-inline');
-      if (li) li.innerHTML = 'PERSONAS DELIBERATING — 2–3 MINUTES <span class="cursor">█</span>';
+      if (li) li.innerHTML = 'COUNCIL DELIBERATING — 5–7 MINUTES FOR FULL OUTPUT <span class="cursor">█</span>';
     }, 20000);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 300000);
+    const timeout = setTimeout(() => controller.abort(), 600000);
 
     let res: Response;
     try {
