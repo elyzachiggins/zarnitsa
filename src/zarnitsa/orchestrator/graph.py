@@ -122,11 +122,16 @@ def _mode_instruction(mode: WargameMode, _role: PersonaRole) -> str:
     return _MODE_HEADERS.get(mode, "")
 
 
+_MAX_TOKENS_DEFAULT = 4096
+_MAX_TOKENS_CINC = 6144  # CINC sees all prior turns + corpus; needs headroom for full synthesis
+
+
 async def _run_persona(
     prov: BaseProvider,
     persona: Persona,
     request: CouncilRequest,
     priors: list[PersonaTurn],
+    max_tokens: int = _MAX_TOKENS_DEFAULT,
 ) -> PersonaTurn:
     priors_text = _format_priors(priors)
     user_msg_parts = []
@@ -163,7 +168,7 @@ async def _run_persona(
     resp = await prov.complete(
         messages=[ProviderMessage(role="user", content="\n\n".join(user_msg_parts))],
         system=_compose_system_prompt(persona.system_prompt),
-        max_tokens=2048,
+        max_tokens=max_tokens,
     )
     return PersonaTurn(persona=persona.role, content=resp.content)
 
@@ -176,7 +181,10 @@ async def _run_stage(
     priors: list[PersonaTurn],
 ) -> list[PersonaTurn]:
     tasks = [
-        _run_persona(prov, personas[role], request, priors)
+        _run_persona(
+            prov, personas[role], request, priors,
+            max_tokens=_MAX_TOKENS_CINC if role == PersonaRole.CINC else _MAX_TOKENS_DEFAULT,
+        )
         for role in roles
         if role in personas
     ]
