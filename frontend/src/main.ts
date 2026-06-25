@@ -229,7 +229,6 @@ async function submitScenario(): Promise<void> {
     session.push(exchange);
     exchangeEl.classList.remove('exchange-loading');
     statusEl.remove();
-    attachCardToggles(exchangeEl);
 
   } catch (err) {
     const isAbort = err instanceof DOMException && err.name === 'AbortError';
