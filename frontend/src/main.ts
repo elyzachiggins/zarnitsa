@@ -18,11 +18,11 @@ interface Exchange {
 }
 
 const PERSONAS: Record<string, { abbr: string; title: string; cinc?: true }> = {
-  main_intelligence_directorate: { abbr: 'ГРУ',    title: 'Main Intelligence Directorate' },
-  minister_of_defense:           { abbr: 'МО',     title: 'Minister of Defense' },
-  chief_of_general_staff:        { abbr: 'НГШ',    title: 'Chief of the General Staff' },
-  security_council:              { abbr: 'СовБез', title: 'Security Council' },
-  commander_in_chief:            { abbr: 'ВГК',    title: 'Commander-in-Chief', cinc: true },
+  main_intelligence_directorate: { abbr: 'GRU',    title: 'Main Intelligence Directorate' },
+  minister_of_defense:           { abbr: 'MO',     title: 'Minister of Defense' },
+  chief_of_general_staff:        { abbr: 'NGSh',   title: 'Chief of the General Staff' },
+  security_council:              { abbr: 'Sovbez', title: 'Security Council' },
+  commander_in_chief:            { abbr: 'VGK',    title: 'Commander-in-Chief', cinc: true },
 };
 
 const MODE_HINTS: Record<string, string> = {
@@ -104,10 +104,10 @@ function renderHistory(): void {
 }
 
 const STAGE_STATUS: Record<number, string> = {
-  1: 'МО · НГШ DELIBERATING IN PARALLEL <span class="cursor">█</span>',
-  2: 'МО · НГШ DELIBERATING IN PARALLEL <span class="cursor">█</span>',
-  3: 'СОВБЕЗ SYNTHESIZING <span class="cursor">█</span>',
-  4: 'ВГК RENDERING FINAL DECISION <span class="cursor">█</span>',
+  1: 'MO · NGSh DELIBERATING IN PARALLEL <span class="cursor">█</span>',
+  2: 'MO · NGSh DELIBERATING IN PARALLEL <span class="cursor">█</span>',
+  3: 'SOVBEZ SYNTHESIZING <span class="cursor">█</span>',
+  4: 'VGK RENDERING FINAL DECISION <span class="cursor">█</span>',
 };
 
 async function submitScenario(): Promise<void> {

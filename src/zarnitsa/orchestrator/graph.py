@@ -68,11 +68,18 @@ STAGE_4 = [PersonaRole.CINC]
 _LANGUAGE_INSTRUCTION = (
     "LANGUAGE: All text must be written in English first. "
     "Russian is permitted only as a parenthetical gloss immediately after the English, never as standalone text. "
-    "Correct: '## Situation Assessment (Оценка обстановки)' or 'regrouping (перегруппировка)' or 'the НГШ'. "
-    "Incorrect: '## Оценка обстановки' or any section header, title, sentence, or paragraph written in Russian without an English equivalent preceding it. "
-    "Russian abbreviations (НГШ, ГРУ, МО, ВГК, Совбез, etc.) may appear inline without a gloss. "
+    "Correct: '## Situation Assessment (Оценка обстановки)' or 'regrouping (перегруппировка)'. "
+    "Incorrect: '## Оценка обстановки' or any header, title, or sentence written in Russian without English preceding it. "
     "Opening salutations must be in English: 'Comrades.' not 'Товарищи.' "
-    "Fidelity notes, citations, and all analytical content follow the same rule: English first, Russian gloss in parentheses if needed."
+    "ABBREVIATIONS: All organizational and institutional abbreviations must be written in Latin transliteration, not Cyrillic. "
+    "Use: GRU (not ГРУ), MO (not МО), NGSh (not НГШ), VGK (not ВГК), Sovbez (not Совбез), "
+    "GSh (not ГШ), GOU (not ГОУ), GOMU (not ГОМУ), NTsUO (not НЦУО), TsVSI (not ЦВСИ), "
+    "REB (not РЭБ), VKS (not ВКС), VMF (not ВМФ), VDV (not ВДВ), MVD (not МВД), "
+    "FSB (not ФСБ), SVR (not СВР), FSO (not ФСО), OGV (not ОГВ), OPK (not ОПК), "
+    "Rosgvardiya (not Росгвардия), DNR (not ДНР), LNR (not ЛНР). "
+    "Doctrinal terms with no English equivalent remain as Russian in parentheses after the English: "
+    "'reflexive control (рефлексивное управление)', 'maskirovka (маскировка)', "
+    "'operational art (оперативное искусство)', 'correlation of forces and means (соотношение сил и средств)'."
 )
 
 
