@@ -66,16 +66,13 @@ STAGE_4 = [PersonaRole.CINC]
 
 
 _LANGUAGE_INSTRUCTION = (
-    "LANGUAGE: Respond entirely in English. "
-    "This means: all section headers, document titles, body text, analysis, reasoning, "
-    "and recommendations MUST be written in English. "
-    "Use Russian ONLY for inline terms embedded within English sentences: "
-    "organization abbreviations (НГШ, ГРУ, МО, ВГК, Совбез, ОПК, etc.), "
-    "doctrinal terms with no direct English equivalent (маскировка, рефлексивное управление, "
-    "оперативное искусство, перегруппировка, etc.), place names, and verbatim source quotations. "
-    "Do NOT write Russian section headers, Russian document titles, or Russian opening salutations. "
-    "Write '# Strategic Decision — Supreme Commander-in-Chief' not '# Решение Верховного Главнокомандующего'. "
-    "Write '## Situation Assessment' not '## Оценка обстановки'."
+    "LANGUAGE: All text must be written in English first. "
+    "Russian is permitted only as a parenthetical gloss immediately after the English, never as standalone text. "
+    "Correct: '## Situation Assessment (Оценка обстановки)' or 'regrouping (перегруппировка)' or 'the НГШ'. "
+    "Incorrect: '## Оценка обстановки' or any section header, title, sentence, or paragraph written in Russian without an English equivalent preceding it. "
+    "Russian abbreviations (НГШ, ГРУ, МО, ВГК, Совбез, etc.) may appear inline without a gloss. "
+    "Opening salutations must be in English: 'Comrades.' not 'Товарищи.' "
+    "Fidelity notes, citations, and all analytical content follow the same rule: English first, Russian gloss in parentheses if needed."
 )
 
 
