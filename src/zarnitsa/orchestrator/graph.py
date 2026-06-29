@@ -67,10 +67,15 @@ STAGE_4 = [PersonaRole.CINC]
 
 _LANGUAGE_INSTRUCTION = (
     "LANGUAGE: Respond entirely in English. "
-    "Use Russian only for: organization abbreviations (НГШ, ГРУ, МО, ВГК, Совбез, etc.), "
+    "This means: all section headers, document titles, body text, analysis, reasoning, "
+    "and recommendations MUST be written in English. "
+    "Use Russian ONLY for inline terms embedded within English sentences: "
+    "organization abbreviations (НГШ, ГРУ, МО, ВГК, Совбез, ОПК, etc.), "
     "doctrinal terms with no direct English equivalent (маскировка, рефлексивное управление, "
-    "оперативное искусство, etc.), proper nouns, and direct source citations. "
-    "All analysis, reasoning, and recommendations must be written in English."
+    "оперативное искусство, перегруппировка, etc.), place names, and verbatim source quotations. "
+    "Do NOT write Russian section headers, Russian document titles, or Russian opening salutations. "
+    "Write '# Strategic Decision — Supreme Commander-in-Chief' not '# Решение Верховного Главнокомандующего'. "
+    "Write '## Situation Assessment' not '## Оценка обстановки'."
 )
 
 
@@ -122,8 +127,8 @@ def _mode_instruction(mode: WargameMode, _role: PersonaRole) -> str:
     return _MODE_HEADERS.get(mode, "")
 
 
-_MAX_TOKENS_DEFAULT = 4096
-_MAX_TOKENS_CINC = 6144  # CINC sees all prior turns + corpus; needs headroom for full synthesis
+_MAX_TOKENS_DEFAULT = 6144
+_MAX_TOKENS_CINC = 8192  # CINC sees all prior turns + corpus; needs headroom for full synthesis
 
 
 async def _run_persona(
