@@ -21,10 +21,9 @@ Each persona reasons within a shared cultural prior (Russkiy mir, civilization-s
 
 ## Use cases
 
+- **Russia Red Team simulation/advisory** for strategic scenarios (with appropriate skepticism)
 - **OPFOR red team** in wargaming exercises (small unit through theater)
 - **Threat-intelligence training** for service members studying adversary behavior
-- **"What would Russia do" advisory** for strategic planners (with appropriate skepticism)
-- **Doctrine education** with citation-traceable answers
 
 ## Architecture
 
