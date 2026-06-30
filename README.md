@@ -1,6 +1,6 @@
 # ZARNITSA
 
-A system that simulates the decision-making apparatus of the Russian Federation Armed Forces through a multi-persona council through doctrinal and deep analyses RAG. Intended for OPFOR red-team use, small-unit threat-intelligence training, and strategic advisory wargaming.
+A system that simulates the military and strategic decision-making apparatus of the Russian Federation through a multi-agent council grounded in a retrieval corpus of Russian military doctrine. Intended for OPFOR red-team use and strategic advisory wargaming.
 
 > **Adversary modeling, not objective analysis.** Zarnitsa models the institutional worldview, doctrinal vocabulary, and decision-making patterns of the Russian General Staff and adjacent bodies. The output reflects the perspective those institutions would produce — it is not a neutral or balanced analysis of any situation. Use it for adversary modeling, training, and red-cell wargaming. Do not use it as a stand-in for independent strategic analysis.
 
@@ -10,16 +10,12 @@ A system that simulates the decision-making apparatus of the Russian Federation 
 
 Given a strategic, operational, or tactical question, Zarnitsa runs a deliberative council of personas representing the major bodies in the Russian military decision-making apparatus:
 
-- **Chief of General Staff** (НГШ) — final military synthesis
-- **Chief, Main Operations Directorate** (НГОУ) — operational planning
-- **Chief, Main Org-Mobilization Directorate** (НГОМУ) — force structure, mobilization
-- **Chief, Center for Military-Strategic Studies** (ЦВСИ) — long-horizon, breakthrough concepts
 - **Chief, GRU** — adversary assessment, reflexive control
-- **Commander, Unmanned Systems Forces** (ВБпС) — UAV warfighting, Ukraine-learned innovations
+- **Chief of General Staff** (НГШ) — final military synthesis
+- **Security Council** (Совбез)-civilian security interagency apparatus 
 - **Minister of Defense** — political-military, war economy
 - **Commander-in-Chief** (ВГК) — strategic intent, red lines
-- **Sino-Russian liaison** (advisor) — China factor
-- **MoF/CBR economic advisor** — inflation, industrial capacity, sanctions
+
 
 Each persona reasons within a shared cultural prior (Russkiy mir, civilization-state framing, sovereignty as supreme value, anti-Western imperial-universalism critique). Each output carries provenance tags linking claims back to corpus entries by tier.
 
