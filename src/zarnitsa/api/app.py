@@ -19,8 +19,14 @@ from zarnitsa.api.schemas import (
 )
 from zarnitsa.api.security import rate_limit, require_api_key
 from zarnitsa.config import settings
-from zarnitsa.exceptions import CorpusError, PersonaError, ProviderError
+from zarnitsa.exceptions import (
+    CorpusError,
+    CorpusUnavailable,
+    PersonaError,
+    ProviderError,
+)
 from zarnitsa.orchestrator import CULTURAL_PRIOR, run_council, run_council_streaming
+from zarnitsa.orchestrator.grounding import Grounding
 from zarnitsa.personas import load_persona, load_personas
 from zarnitsa.providers import ProviderMessage, get_provider
 from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole
@@ -51,10 +57,29 @@ _METERED = [Depends(require_api_key), Depends(rate_limit)]
 
 @app.get("/health")
 async def health() -> dict[str, object]:
+    """Liveness plus corpus state.
+
+    Reports corpus health so a monitor can catch a broken snapshot without waiting
+    for a user to notice their analysis has no sources behind it.
+    """
+    corpus: dict[str, object]
+    try:
+        from zarnitsa.corpus import Retriever
+
+        retriever = Retriever()
+        corpus = {
+            "entries": len(retriever),
+            "failed": [str(e) for e in retriever.errors],
+            "ok": not retriever.errors and len(retriever) > 0,
+        }
+    except Exception as e:
+        corpus = {"entries": 0, "failed": [str(e)], "ok": False}
+
     return {
-        "status": "ok",
+        "status": "ok" if corpus["ok"] else "degraded",
         "version": __version__,
         "auth_required": settings.auth_required,
+        "corpus": corpus,
     }
 
 
@@ -122,9 +147,16 @@ async def chat_completions(req: OAIChatCompletionRequest) -> OAIChatCompletionRe
 
 @app.post("/v1/council", response_model=CouncilResponse, dependencies=_METERED)
 async def council_deliberate(req: CouncilRequest) -> CouncilResponse:
-    """Full institutional council deliberation across four staged rounds."""
+    """Full institutional council deliberation across four staged rounds.
+
+    Returns 503 when the corpus cannot be loaded. That is deliberate: ungrounded
+    output is indistinguishable from grounded output to a reader, so the failure is
+    surfaced rather than absorbed. Set ZARNITSA_REQUIRE_GROUNDING=false to override.
+    """
     try:
         return await run_council(req)
+    except CorpusUnavailable as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except (PersonaError, ProviderError) as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -140,10 +172,19 @@ async def council_stream(req: CouncilRequest) -> StreamingResponse:
 
     async def generate():
         try:
-            async for turn in run_council_streaming(req):
-                payload = json.dumps({"type": "turn", "turn": turn.model_dump(mode="json")})
+            async for item in run_council_streaming(req):
+                if isinstance(item, Grounding):
+                    # Emitted before any analysis so the client can show a caveat
+                    # first, rather than after the user has already read the output.
+                    payload = json.dumps({"type": "grounding", "grounding": item.to_dict()})
+                else:
+                    payload = json.dumps(
+                        {"type": "turn", "turn": item.model_dump(mode="json")}
+                    )
                 yield f"data: {payload}\n\n"
             yield 'data: {"type": "done"}\n\n'
+        except CorpusUnavailable as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
         except (PersonaError, ProviderError) as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
         except Exception:

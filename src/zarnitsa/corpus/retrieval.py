@@ -28,7 +28,8 @@ from collections.abc import Iterable
 
 from rank_bm25 import BM25Okapi
 
-from zarnitsa.corpus.entry import CorpusEntry, load_snapshot
+from zarnitsa.config import settings
+from zarnitsa.corpus.entry import CorpusEntry, EntryError, load_snapshot_report
 from zarnitsa.types import SourceTier
 
 # Unicode-aware: \w includes Cyrillic under Python's default re.UNICODE.
@@ -96,13 +97,26 @@ class Retriever:
     """
 
     def __init__(self, entries: Iterable[CorpusEntry] | None = None) -> None:
-        self.entries: list[CorpusEntry] = (
-            list(entries) if entries is not None else load_snapshot()
-        )
+        if entries is not None:
+            self.entries = list(entries)
+            self.errors: list[EntryError] = []
+        else:
+            report = load_snapshot_report()
+            self.entries = report.entries
+            # Retained rather than logged-and-dropped: a partially-loaded corpus is
+            # reported through the API so a caller can tell grounded output from
+            # output produced over a corpus that is quietly missing entries.
+            self.errors = report.errors
         self._docs = [_index_document(e) for e in self.entries]
         # BM25Okapi raises on an empty corpus; guard so an empty snapshot degrades to
         # "no results" rather than blowing up every request.
         self._bm25 = BM25Okapi(self._docs) if self._docs else None
+        # Dense index is opt-in; see corpus/embeddings.py for why it's off by default.
+        self._dense = None
+        if settings.retrieval_mode == "hybrid" and self.entries:
+            from zarnitsa.corpus.embeddings import build_index
+
+            self._dense = build_index(self.entries, settings.embedding_model)
 
     def __len__(self) -> int:
         return len(self.entries)
@@ -129,11 +143,31 @@ class Retriever:
         scores = self._bm25.get_scores(tokens)
         floor = _TIER_RANK[tier_floor] if tier_floor else None
 
+        def allowed(idx: int) -> bool:
+            return floor is None or _TIER_RANK[self.entries[idx].tier] >= floor
+
+        if self._dense is not None:
+            # Hybrid: fuse BM25 and dense rankings by reciprocal rank. Keep only
+            # entries BM25 gave a positive score, so an irrelevant entry can't be
+            # dragged in on dense similarity alone.
+            from zarnitsa.corpus.embeddings import fuse
+
+            bm25_ranking = [
+                i
+                for i in sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+                if scores[i] > 0 and allowed(i)
+            ]
+            dense_ranking = [i for i in self._dense.rank(query) if allowed(i)]
+            positive = set(bm25_ranking)
+            dense_ranking = [i for i in dense_ranking if i in positive]
+            return [
+                (self.entries[i], float(score))
+                for i, score in fuse(bm25_ranking, dense_ranking, top_k)
+            ]
+
         scored: list[tuple[CorpusEntry, float]] = []
-        for entry, score in zip(self.entries, scores, strict=True):
-            if score <= 0:
-                continue
-            if floor is not None and _TIER_RANK[entry.tier] < floor:
+        for idx, (entry, score) in enumerate(zip(self.entries, scores, strict=True)):
+            if score <= 0 or not allowed(idx):
                 continue
             scored.append((entry, float(score)))
 

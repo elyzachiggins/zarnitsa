@@ -11,15 +11,19 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any
 
 from zarnitsa.config import settings
 from zarnitsa.corpus.entry import CorpusEntry
 from zarnitsa.corpus.retrieval import Retriever
+from zarnitsa.exceptions import CorpusUnavailable
 from zarnitsa.orchestrator.cultural_prior import CULTURAL_PRIOR
+from zarnitsa.orchestrator.grounding import Grounding, GroundingStatus
 from zarnitsa.personas import load_personas
 from zarnitsa.personas.loader import Persona
 from zarnitsa.provenance.extract import extract_citations
+from zarnitsa.provenance.verify import summarise, verify_turn
 from zarnitsa.providers import ProviderMessage, SystemBlock, get_provider_for
 from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole, PersonaTurn, WargameMode
 
@@ -42,18 +46,52 @@ def _get_retriever() -> Retriever:
     return _retriever
 
 
-def _retrieve(request: CouncilRequest) -> RetrievalResults:
-    """Retrieve grounding entries once per deliberation.
+def _retrieve(request: CouncilRequest) -> tuple[RetrievalResults, Grounding]:
+    """Retrieve grounding entries once per deliberation, reporting grounding status.
 
-    Previously each persona ran this independently with the identical query, so the
-    corpus was scanned five times per deliberation to produce five identical result
-    sets. Retrieval depends only on the scenario, so it is hoisted to the top.
+    Retrieval is hoisted here because it depends only on the scenario; each persona
+    used to run it independently with the identical query, scanning the corpus five
+    times for five identical result sets.
+
+    This deliberately does NOT swallow a corpus failure. The previous version returned
+    an empty list and logged, which is how a broken corpus stayed invisible through
+    weeks of ungrounded deliberations. The failure is now a value the caller must
+    handle.
     """
     try:
-        return _get_retriever().search(request.scenario, top_k=settings.retrieval_top_k)
-    except Exception:
-        log.exception("Corpus retrieval failed — proceeding without grounding")
-        return []
+        retriever = _get_retriever()
+    except Exception as e:
+        log.exception("Corpus failed to load")
+        return [], Grounding(
+            status=GroundingStatus.CORPUS_UNAVAILABLE,
+            detail=str(e),
+        )
+
+    corpus_errors = [str(err) for err in retriever.errors]
+    try:
+        results = retriever.search(request.scenario, top_k=settings.retrieval_top_k)
+    except Exception as e:
+        log.exception("Corpus retrieval failed")
+        return [], Grounding(
+            status=GroundingStatus.CORPUS_UNAVAILABLE,
+            corpus_size=len(retriever),
+            corpus_errors=corpus_errors,
+            detail=str(e),
+        )
+
+    if not results:
+        status = GroundingStatus.NO_MATCH
+    elif corpus_errors:
+        status = GroundingStatus.DEGRADED
+    else:
+        status = GroundingStatus.GROUNDED
+
+    return results, Grounding(
+        status=status,
+        entry_ids=[e.id for e, _ in results],
+        corpus_size=len(retriever),
+        corpus_errors=corpus_errors,
+    )
 
 
 def _format_corpus_context(results: RetrievalResults) -> str:
@@ -299,14 +337,40 @@ def _aggregate_usage(turns: list[PersonaTurn]) -> dict[str, Any]:
     }
 
 
+def _check_grounding(grounding: Grounding) -> None:
+    """Refuse to produce ungrounded analysis when the corpus is broken.
+
+    NO_MATCH is not an error — an obscure scenario legitimately retrieves nothing, and
+    the council can still reason from its institutional priors. CORPUS_UNAVAILABLE is
+    different: it means the grounding machinery is broken, and returning output that
+    looks corpus-supported but isn't is the exact failure this whole change exists to
+    prevent. Set ZARNITSA_REQUIRE_GROUNDING=false to allow it anyway.
+    """
+    if (
+        settings.require_grounding
+        and grounding.status is GroundingStatus.CORPUS_UNAVAILABLE
+    ):
+        raise CorpusUnavailable(
+            f"corpus unavailable, refusing to produce ungrounded analysis: "
+            f"{grounding.detail}"
+        )
+
+
 async def run_council_streaming(
     request: CouncilRequest,
     *,
     provider: BaseProvider | None = None,
-):
-    """Yield PersonaTurn objects as each deliberation stage completes."""
+) -> AsyncIterator[Grounding | PersonaTurn]:
+    """Yield the Grounding status first, then each PersonaTurn as its stage completes.
+
+    Grounding comes first so a client can render a "no source material" caveat before
+    any analysis appears, rather than after the user has already read it.
+    """
     personas = {p.role: p for p in load_personas()}
-    retrieved = _retrieve(request)
+    retrieved, grounding = _retrieve(request)
+    _check_grounding(grounding)
+    yield grounding
+
     corpus_context = _format_corpus_context(retrieved)
     all_turns: list[PersonaTurn] = []
 
@@ -324,9 +388,22 @@ async def run_council(
     *,
     provider: BaseProvider | None = None,
 ) -> CouncilResponse:
-    """Run council deliberation in staged parallel execution."""
+    """Run council deliberation in staged parallel execution.
+
+    Delegates to the LangGraph StateGraph when ZARNITSA_USE_LANGGRAPH is set. Both
+    paths call the same per-seat function, so they produce identical output; the graph
+    adds checkpointing and node-level streaming at the cost of a large dependency in
+    the request path.
+    """
+    if settings.use_langgraph:
+        from zarnitsa.orchestrator.langgraph_council import run_council_graph
+
+        return await run_council_graph(request, provider=provider)
+
     personas = {p.role: p for p in load_personas()}
-    retrieved = _retrieve(request)
+    retrieved, grounding = _retrieve(request)
+    _check_grounding(grounding)
+
     corpus_context = _format_corpus_context(retrieved)
     all_turns: list[PersonaTurn] = []
 
@@ -336,10 +413,35 @@ async def run_council(
         )
         all_turns.extend(stage_turns)
 
+    return _assemble_response(request, all_turns, grounding, retrieved)
+
+
+def _assemble_response(
+    request: CouncilRequest,
+    all_turns: list[PersonaTurn],
+    grounding: Grounding,
+    retrieved: RetrievalResults | None = None,
+) -> CouncilResponse:
     final = next(
         (t.content for t in reversed(all_turns) if t.persona == PersonaRole.CINC),
         all_turns[-1].content if all_turns else "No deliberation.",
     )
+
+    metadata: dict[str, Any] = {
+        "wargame_mode": request.wargame_mode.value,
+        "personas_engaged": [t.persona.value for t in all_turns],
+        "retrieved_entries": grounding.entry_ids,
+        "grounding": grounding.to_dict(),
+        "usage": _aggregate_usage(all_turns),
+    }
+
+    if settings.verify_claims and retrieved:
+        checks = [
+            check
+            for turn in all_turns
+            for check in verify_turn(turn.content, turn.citations, retrieved)
+        ]
+        metadata["verification"] = summarise(checks).to_dict()
 
     return CouncilResponse(
         recommendation=final,
@@ -347,14 +449,17 @@ async def run_council(
         dissents=[],
         turns=all_turns,
         knowledge_horizon=None,
-        metadata={
-            "wargame_mode": request.wargame_mode.value,
-            "personas_engaged": [t.persona.value for t in all_turns],
-            "retrieved_entries": [e.id for e, _ in retrieved],
-            "usage": _aggregate_usage(all_turns),
-        },
+        metadata=metadata,
     )
 
 
 def build_council_graph() -> Any:
-    raise NotImplementedError("Full LangGraph StateGraph wiring is a future milestone.")
+    """Compile the LangGraph StateGraph for the council DAG.
+
+    Re-exported from langgraph_council so the historical import path keeps working.
+    Imported lazily because langgraph is an optional dependency — the default
+    execution path does not need it.
+    """
+    from zarnitsa.orchestrator.langgraph_council import build_council_graph as _build
+
+    return _build()

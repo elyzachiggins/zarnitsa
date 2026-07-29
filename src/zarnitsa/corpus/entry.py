@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -103,17 +104,74 @@ def snapshot_dir(snapshot: str | None = None) -> Path:
     )
 
 
-def load_snapshot(snapshot: str | None = None) -> list[CorpusEntry]:
+@dataclass(frozen=True)
+class EntryError:
+    """One corpus file that could not be loaded."""
+
+    filename: str
+    reason: str
+
+    def __str__(self) -> str:
+        return f"{self.filename}: {self.reason}"
+
+
+@dataclass(frozen=True)
+class SnapshotReport:
+    """Result of loading a snapshot: what parsed, and what didn't.
+
+    The previous loader aborted on the first unparseable file, so five bad entries
+    took all thirty-seven offline. Reporting per-file failures instead means one
+    malformed entry costs you that entry, not the corpus — and the failures are
+    carried in the return value rather than only reaching a log line.
+    """
+
+    entries: list[CorpusEntry]
+    errors: list[EntryError]
+
+    @property
+    def ok(self) -> bool:
+        return not self.errors
+
+    @property
+    def degraded(self) -> bool:
+        """Some entries loaded, but not all of them."""
+        return bool(self.errors) and bool(self.entries)
+
+
+def load_snapshot_report(snapshot: str | None = None) -> SnapshotReport:
+    """Load every entry in a snapshot, isolating per-file failures.
+
+    Raises CorpusError only when the snapshot directory is missing, or when it
+    contains candidate entries and *none* of them parsed — i.e. when continuing would
+    mean running with no grounding at all.
+    """
     base = snapshot_dir(snapshot)
     if not base.exists():
         raise CorpusError(f"corpus snapshot not found: {base}")
-    entries = []
+
+    entries: list[CorpusEntry] = []
+    errors: list[EntryError] = []
+
     for p in sorted(base.glob("*.md")):
         try:
             post = frontmatter.load(p)
         except Exception as e:
-            raise CorpusError(f"failed to parse corpus entry {p}: {e}") from e
+            errors.append(EntryError(p.name, f"unparseable frontmatter: {e}"))
+            continue
         if "tier" not in post.metadata:
-            continue  # skip README.md and other non-entry files
-        entries.append(CorpusEntry.from_post(p, post))
-    return entries
+            continue  # README.md and other non-entry markdown
+        try:
+            entries.append(CorpusEntry.from_post(p, post))
+        except Exception as e:
+            errors.append(EntryError(p.name, str(e)))
+
+    if errors and not entries:
+        detail = "; ".join(str(e) for e in errors[:5])
+        raise CorpusError(f"no corpus entries could be loaded from {base}: {detail}")
+
+    return SnapshotReport(entries=entries, errors=errors)
+
+
+def load_snapshot(snapshot: str | None = None) -> list[CorpusEntry]:
+    """Entries only. Use load_snapshot_report() when you need the failure list."""
+    return load_snapshot_report(snapshot).entries

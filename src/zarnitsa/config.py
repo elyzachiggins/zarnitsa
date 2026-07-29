@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Backbone = Literal["anthropic", "gemini", "openrouter", "ollama"]
 FidelityMode = Literal["strict", "permissive"]
+RetrievalMode = Literal["bm25", "hybrid"]
 
 # Repo root, derived from this file's location: src/zarnitsa/config.py -> parents[2].
 # Only used as a fallback when data_dir can't be resolved against the working directory,
@@ -67,6 +68,8 @@ class Settings(BaseSettings):
     # Council deliberations per identity per window. Each one is 5 model calls.
     rate_limit_requests: int = 20
     rate_limit_window_seconds: int = 3600
+    # Redis URL for a shared rate-limit window. Unset = in-process (single worker only).
+    redis_url: str = ""
 
     # --- Behaviour ----------------------------------------------------------
     fidelity_mode: FidelityMode = "strict"
@@ -74,6 +77,22 @@ class Settings(BaseSettings):
     prompt_cache: bool = True
     # Corpus entries retrieved per deliberation.
     retrieval_top_k: int = 6
+    # "bm25" (default) or "hybrid" (BM25 + dense, fused by reciprocal rank).
+    # Hybrid needs the [offline] extra and is only worth it on a much larger corpus —
+    # see src/zarnitsa/corpus/embeddings.py for the reasoning.
+    retrieval_mode: RetrievalMode = "bm25"
+    embedding_model: str = "intfloat/multilingual-e5-base"
+    # Run the lexical claim-support screen on every deliberation. Cheap and
+    # deterministic; results land in metadata.verification.
+    verify_claims: bool = True
+    # Refuse to deliberate when the corpus cannot be loaded, rather than returning
+    # analysis that looks corpus-grounded but has no sources behind it. A scenario
+    # that simply matches nothing is NOT affected by this — that is a normal result.
+    require_grounding: bool = True
+    # Route deliberations through the LangGraph StateGraph instead of the hand-rolled
+    # asyncio staging. Same output either way; the graph adds checkpointing and
+    # node-level streaming, and pulls in a large dependency tree.
+    use_langgraph: bool = False
 
     @cached_property
     def resolved_data_dir(self) -> Path:

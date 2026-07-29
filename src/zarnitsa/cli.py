@@ -85,11 +85,24 @@ def doctor() -> None:
     console.print("\n[bold]Corpus[/bold]")
     console.print(f"  data dir            : {settings.resolved_data_dir}")
     console.print(f"  snapshot            : {settings.corpus_snapshot}")
+    console.print(f"  retrieval mode      : {settings.retrieval_mode}")
     try:
         from zarnitsa.corpus import Retriever
 
         retriever = Retriever()
         console.print(f"  entries indexed     : [green]{len(retriever)}[/green]")
+        # Per-file failures no longer abort the load, so they must be reported here
+        # or a partial corpus looks identical to a healthy one.
+        if retriever.errors:
+            console.print(
+                f"  [red]entries FAILED     : {len(retriever.errors)}[/red] "
+                "— retrieval is running over a partial corpus"
+            )
+            for err in retriever.errors[:5]:
+                console.print(f"      [red]•[/red] {err}")
+            ok = False
+        else:
+            console.print("  entries failed      : [green]0[/green]")
         probe = retriever.search("nuclear deterrence", top_k=1)
         if probe:
             console.print(f"  retrieval probe     : [green]ok[/green] -> {probe[0][0].id}")
@@ -98,7 +111,13 @@ def doctor() -> None:
             ok = False
     except Exception as e:
         console.print(f"  [red]CORPUS FAILED TO LOAD:[/red] {e}")
-        console.print("  [yellow]Deliberations will run with NO grounding.[/yellow]")
+        if settings.require_grounding:
+            console.print("  [yellow]Council requests will return 503 until this is fixed.[/yellow]")
+        else:
+            console.print(
+                "  [red]ZARNITSA_REQUIRE_GROUNDING is off — deliberations will run "
+                "with NO grounding.[/red]"
+            )
         ok = False
 
     console.print("\n[bold]Personas[/bold]")

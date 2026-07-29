@@ -12,6 +12,7 @@ from zarnitsa.orchestrator.graph import (
     run_council,
     run_council_streaming,
 )
+from zarnitsa.orchestrator.grounding import Grounding
 from zarnitsa.types import CouncilRequest, PersonaRole, WargameMode
 
 SCENARIO = "NATO announces accelerated Ukrainian accession timeline."
@@ -72,7 +73,8 @@ async def test_retrieval_runs_once_not_per_persona(request_, fake_provider) -> N
     from zarnitsa.orchestrator.graph import _format_corpus_context
 
     await run_council(request_, provider=fake_provider)
-    expected = _format_corpus_context(_retrieve(request_))
+    retrieved, _ = _retrieve(request_)
+    expected = _format_corpus_context(retrieved)
     assert expected, "expected a non-empty corpus block"
     for call in fake_provider.calls:
         assert expected in call["user"]
@@ -81,7 +83,7 @@ async def test_retrieval_runs_once_not_per_persona(request_, fake_provider) -> N
 async def test_citations_are_populated_when_persona_cites(request_) -> None:
     from tests.conftest import FakeProvider
 
-    retrieved = _retrieve(CouncilRequest(scenario=SCENARIO))
+    retrieved, _ = _retrieve(CouncilRequest(scenario=SCENARIO))
     assert retrieved, "expected the scenario to retrieve something"
     cited_id = retrieved[0][0].id
 
@@ -99,8 +101,11 @@ async def test_metadata_reports_usage_and_retrieval(request_, fake_provider) -> 
     assert resp.metadata["retrieved_entries"]
 
 
-async def test_streaming_yields_turns_in_stage_order(request_, fake_provider) -> None:
-    seen = [t.persona async for t in run_council_streaming(request_, provider=fake_provider)]
+async def test_streaming_yields_grounding_first_then_turns(request_, fake_provider) -> None:
+    """Grounding must precede any analysis so a caveat can render before output."""
+    items = [i async for i in run_council_streaming(request_, provider=fake_provider)]
+    assert isinstance(items[0], Grounding)
+    seen = [i.persona for i in items[1:]]
     assert seen[0] == PersonaRole.GRU
     assert seen[-1] == PersonaRole.CINC
     assert len(seen) == 5

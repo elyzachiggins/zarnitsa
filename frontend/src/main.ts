@@ -35,6 +35,13 @@ function authHeader(): Record<string, string> {
 
 interface Citation { entry_id: string; tier: string; snippet: string; }
 interface PersonaTurn { persona: string; content: string; citations: Citation[]; }
+interface Grounding {
+  status: string;
+  is_grounded: boolean;
+  entry_ids: string[];
+  corpus_size: number;
+  warning: string | null;
+}
 // CouncilResponse was dropped when the UI moved to the SSE stream in aff2680 — the
 // non-streaming shape is no longer parsed here, and tsc flagged it as unused.
 interface Exchange {
@@ -231,9 +238,20 @@ async function submitScenario(): Promise<void> {
         for (const part of parts) {
           const line = part.trim();
           if (!line.startsWith('data: ')) continue;
-          const data = JSON.parse(line.slice(6)) as { type: string; turn?: PersonaTurn; message?: string };
+          const data = JSON.parse(line.slice(6)) as {
+            type: string; turn?: PersonaTurn; message?: string; grounding?: Grounding;
+          };
 
-          if (data.type === 'turn' && data.turn) {
+          if (data.type === 'grounding' && data.grounding) {
+            // Arrives before any analysis. If the council had no source material,
+            // the user needs to know that before reading the output, not after.
+            if (data.grounding.warning) {
+              const warn = document.createElement('div');
+              warn.className = 'grounding-warning';
+              warn.textContent = `⚠ ${data.grounding.warning}`;
+              exchangeEl.insertBefore(warn, turnsEl);
+            }
+          } else if (data.type === 'turn' && data.turn) {
             turns.push(data.turn);
             // Append card immediately — first card expanded, rest collapsed
             const cardHtml = renderPersonaCard(data.turn, turns.length > 1);
