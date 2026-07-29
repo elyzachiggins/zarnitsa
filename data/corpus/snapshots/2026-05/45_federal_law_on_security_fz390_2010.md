@@ -1,6 +1,6 @@
 ---
 id: federal_law_on_security_fz390_2010
-title: "Federal Law on Security — FZ-390 (2010)"
+title: "О безопасности (Федеральный закон от 28.12.2010 № 390-ФЗ) — Federal Law on Security (full verbatim text)"
 tier: primary_doctrine
 source_date: "2010-12-28"
 source_citation: "Федеральный закон от 28.12.2010 № 390-ФЗ «О безопасности». Принят ГД 07.12.2010, одобрен СФ 15.12.2010. Источник: raw/о безопастности FZ_390.pdf (7 стр., текст извлечён полностью)."

@@ -1,6 +1,6 @@
 ---
 id: federal_law_on_defense_fz61_1996
-title: "Federal Law on Defense — FZ-61 (1996, as amended through 2025)"
+title: "Об обороне (Федеральный закон от 31.05.1996 № 61-ФЗ) — Federal Law on Defense (full verbatim text)"
 tier: primary_doctrine
 source_date: "1996-05-31"
 source_citation: "Федеральный закон от 31.05.1996 г. № 61-ФЗ «Об обороне». Принят ГД 24.04.1996, одобрен СФ 15.05.1996. В редакции ФЗ по состоянию на 04.11.2025 № 411-ФЗ. Источник: raw/Федеральный закон от 31.05.1996 г. № 61-ФЗ Об Обороне.pdf (44 стр., текст извлечён)."

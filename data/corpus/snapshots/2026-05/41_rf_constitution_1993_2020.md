@@ -1,6 +1,6 @@
 ---
 id: rf_constitution_1993_2020
-title: "Constitution of the Russian Federation (1993, as amended 2020) — Sovereignty, Territorial Integrity, and Presidential/Supreme-Commander Authority"
+title: "Конституция Российской Федерации (1993, с поправками 2020) — full verbatim text"
 tier: primary_doctrine
 source_date: "1993-12-12"
 source_citation: "Конституция Российской Федерации (принята всенародным голосованием 12.12.1993, с изменениями, одобренными в ходе общероссийского голосования 01.07.2020). Извлечено из предоставленного пользователем текста: raw/конституция.docx (114 866 знаков, 677 абзацев). Цитируемые статьи — дословно."

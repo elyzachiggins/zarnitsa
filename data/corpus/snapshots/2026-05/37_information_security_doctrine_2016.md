@@ -1,6 +1,6 @@
 ---
 id: information_security_doctrine_2016
-title: "Information Security Doctrine of the Russian Federation 2016 (Указ № 646)"
+title: "Доктрина информационной безопасности Российской Федерации (2016) — full verbatim text"
 tier: primary_doctrine
 source_date: "2016-12-05"
 source_citation: "Доктрина информационной безопасности Российской Федерации. Утверждена Указом Президента РФ от 05.12.2016 № 646. kremlin.ru/acts/bank/41460. rg.ru/documents/2016/12/06/doktrina-infobezobasnost-site-dok.html"

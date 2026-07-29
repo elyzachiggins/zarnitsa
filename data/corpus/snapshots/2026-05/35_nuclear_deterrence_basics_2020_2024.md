@@ -1,6 +1,6 @@
 ---
 id: nuclear_deterrence_basics_2020_2024
-title: "Basic Principles of RF State Policy in the Area of Nuclear Deterrence — Указ № 355 (2020) and Указ № 991 (2024)"
+title: "Основы государственной политики Российской Федерации в области ядерного сдерживания (Указ № 355 от 02.06.2020; Указ № 991 от 19.11.2024) — full verbatim text"
 tier: primary_doctrine
 source_date: "2024-11-19"
 source_citation: "Основы государственной политики Российской Федерации в области ядерного сдерживания. Указ Президента РФ от 02.06.2020 № 355 (утратил силу); Указ Президента РФ от 19.11.2024 № 991 (действующая редакция). kremlin.ru/acts/bank/45562 (2020); kremlin.ru/acts/bank/51312 (2024)."
