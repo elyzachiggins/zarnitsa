@@ -123,10 +123,85 @@ class SlidingWindowLimiter:
         self._hits.clear()
 
 
-_limiter = SlidingWindowLimiter(
-    limit=settings.rate_limit_requests,
-    window_seconds=settings.rate_limit_window_seconds,
-)
+class RedisSlidingWindowLimiter:
+    """Sliding window backed by Redis, for deployments with more than one worker.
+
+    The in-process limiter above keeps its window in local memory, so N workers means
+    N independent counters and an effective limit of N x the configured value. That is
+    fine on Render's single-instance free tier and wrong everywhere else.
+
+    Implemented as a sorted set per identity: trim entries older than the window, count
+    what remains, add the current hit, and set a TTL so idle identities expire on their
+    own rather than accumulating. The read-then-write is done in a pipeline — under
+    concurrency that can admit a small number of requests over the limit, which is an
+    acceptable trade for not needing a Lua script. Tighten it if the limit is a hard
+    billing ceiling rather than an abuse control.
+    """
+
+    def __init__(self, limit: int, window_seconds: int, url: str) -> None:
+        import redis  # imported lazily; only needed when a URL is configured
+
+        self.limit = limit
+        self.window = window_seconds
+        self._redis = redis.Redis.from_url(url, decode_responses=True)
+
+    def check(self, identity: str) -> tuple[bool, int, float]:
+        import time as _time
+
+        now = _time.time()
+        key = f"zarnitsa:rl:{identity}"
+        cutoff = now - self.window
+
+        pipe = self._redis.pipeline()
+        pipe.zremrangebyscore(key, 0, cutoff)
+        pipe.zcard(key)
+        pipe.zrange(key, 0, 0, withscores=True)
+        _, count, oldest = pipe.execute()
+
+        if count >= self.limit:
+            oldest_ts = oldest[0][1] if oldest else now
+            return False, 0, max(0.0, oldest_ts + self.window - now)
+
+        pipe = self._redis.pipeline()
+        pipe.zadd(key, {f"{now}:{id(self)}": now})
+        pipe.expire(key, self.window)
+        pipe.execute()
+        return True, self.limit - count - 1, 0.0
+
+    def reset(self) -> None:
+        for key in self._redis.scan_iter("zarnitsa:rl:*"):
+            self._redis.delete(key)
+
+
+def _build_limiter():
+    """In-process limiter by default; Redis when ZARNITSA_REDIS_URL is set.
+
+    Falls back to the in-process limiter if Redis is unreachable at startup — a
+    degraded limit is better than refusing to boot, and the warning says which one is
+    actually in force.
+    """
+    if settings.redis_url:
+        try:
+            limiter = RedisSlidingWindowLimiter(
+                limit=settings.rate_limit_requests,
+                window_seconds=settings.rate_limit_window_seconds,
+                url=settings.redis_url,
+            )
+            limiter._redis.ping()
+            log.info("Rate limiter: Redis at %s", settings.redis_url)
+            return limiter
+        except Exception:
+            log.exception(
+                "Redis limiter unavailable — falling back to in-process. "
+                "With multiple workers the effective limit is now per-worker."
+            )
+    return SlidingWindowLimiter(
+        limit=settings.rate_limit_requests,
+        window_seconds=settings.rate_limit_window_seconds,
+    )
+
+
+_limiter = _build_limiter()
 
 
 async def rate_limit(request: Request) -> None:
