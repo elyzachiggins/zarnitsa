@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -64,7 +64,10 @@ class PersonaTurn(BaseModel):
     content: str
     citations: list[Citation] = Field(default_factory=list)
     confidence: float | None = None  # 0.0–1.0
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    # Per-call model, token, and cost telemetry. Populated by the orchestrator so a
+    # deliberation can be costed exactly rather than estimated from a price table.
+    usage: dict[str, Any] = Field(default_factory=dict)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class WargameMode(str, Enum):
