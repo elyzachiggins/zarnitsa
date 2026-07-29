@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 import frontmatter
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from zarnitsa.config import settings
 from zarnitsa.exceptions import CorpusError
@@ -39,13 +40,40 @@ class CorpusEntry(BaseModel):
     cited_by_personas: list[str] = Field(default_factory=list)
     content: str
 
+    @field_validator("source_date", mode="before")
+    @classmethod
+    def _empty_date_is_none(cls, v: object) -> object:
+        """Treat an empty/whitespace `source_date:` as absent.
+
+        Several entries carry `source_date: ""` for undated sources. Pydantic rejects
+        an empty string for `date | None`, and because the snapshot loader fails on
+        the first bad entry, one such file takes the whole corpus down.
+        """
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+    @field_validator("keywords", "topics", "cited_by_personas", mode="before")
+    @classmethod
+    def _none_is_empty_list(cls, v: object) -> object:
+        """A key present but empty (`keywords:`) parses as None, not []."""
+        return [] if v is None else v
+
     @classmethod
     def from_file(cls, path: Path) -> CorpusEntry:
         try:
             post = frontmatter.load(path)
         except Exception as e:
             raise CorpusError(f"failed to parse corpus entry {path}: {e}") from e
+        return cls.from_post(path, post)
 
+    @classmethod
+    def from_post(cls, path: Path, post: Any) -> CorpusEntry:
+        """Build an entry from an already-parsed frontmatter post.
+
+        Split out from `from_file` so the snapshot loader, which must read the
+        frontmatter anyway to skip non-entry files, doesn't parse each file twice.
+        """
         meta = post.metadata
         try:
             tier = SourceTier(meta["tier"])
@@ -67,7 +95,12 @@ class CorpusEntry(BaseModel):
 
 
 def snapshot_dir(snapshot: str | None = None) -> Path:
-    return settings.data_dir / "corpus" / "snapshots" / (snapshot or settings.corpus_snapshot)
+    return (
+        settings.resolved_data_dir
+        / "corpus"
+        / "snapshots"
+        / (snapshot or settings.corpus_snapshot)
+    )
 
 
 def load_snapshot(snapshot: str | None = None) -> list[CorpusEntry]:
@@ -76,8 +109,11 @@ def load_snapshot(snapshot: str | None = None) -> list[CorpusEntry]:
         raise CorpusError(f"corpus snapshot not found: {base}")
     entries = []
     for p in sorted(base.glob("*.md")):
-        post = frontmatter.load(p)
+        try:
+            post = frontmatter.load(p)
+        except Exception as e:
+            raise CorpusError(f"failed to parse corpus entry {p}: {e}") from e
         if "tier" not in post.metadata:
             continue  # skip README.md and other non-entry files
-        entries.append(CorpusEntry.from_file(p))
+        entries.append(CorpusEntry.from_post(p, post))
     return entries
