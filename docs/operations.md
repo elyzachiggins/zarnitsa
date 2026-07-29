@@ -125,3 +125,58 @@ docker compose -f docker/offline.yml up
 
 Runs against a local Ollama. Prompt-cache flags are ignored (no such API), and the
 per-seat routing still applies if you point the two backbones at different local models.
+
+---
+
+## Grounding status (added in the resilience pass)
+
+Every response now reports whether it actually had source material behind it, in
+`metadata.grounding` and as the first SSE event.
+
+| Status | Meaning | Behaviour |
+|---|---|---|
+| `grounded` | Full corpus, entries retrieved | Normal |
+| `degraded` | Some entries failed to load; retrieval ran over a partial corpus | Warning surfaced; run proceeds |
+| `no_match` | Corpus fine, nothing matched this scenario | Warning surfaced; run proceeds |
+| `corpus_unavailable` | Corpus could not be loaded at all | **503** unless `ZARNITSA_REQUIRE_GROUNDING=false` |
+
+`no_match` is normal — an obscure scenario legitimately retrieves nothing, and the
+council can still reason from its institutional priors. `corpus_unavailable` is not,
+and the default is to refuse rather than return analysis that reads as
+corpus-supported but isn't.
+
+Two changes back this up:
+
+- **One bad entry no longer takes the corpus down.** `load_snapshot` reports per-file
+  failures instead of aborting on the first, and raises only when *nothing* loaded.
+- **`/health` reports corpus state**, so a monitor catches a broken snapshot without
+  waiting for a user to notice.
+
+## Claim verification
+
+`metadata.verification` runs a lexical support screen over every sentence that names a
+cited entry. It is free, deterministic, and **weak on purpose** — read the caveat it
+returns.
+
+What it proves: the claim shares substantial vocabulary with the entry it cites.
+What it does not prove: that the entry supports the claim.
+
+**On this corpus it usually cannot run at all.** Personas write in English (the
+language rule requires it) while most corpus entries are Russian source text, and word
+overlap across scripts is near zero whether or not the citation is sound. Those pairs
+are reported as `not_assessed` and excluded from `support_rate` — which is `null`, not
+`0.0`, when nothing was assessable. A screen that flagged every cross-lingual citation
+as unsupported would fire on everything and teach you to ignore it.
+
+Meaningful cross-lingual claim checking needs the multilingual embedding path, not word
+overlap. That is the honest next step here, and it is not done.
+
+## Optional backends
+
+All three are off by default. Each is a config change, not a rewrite.
+
+| Setting | Default | Turn on when |
+|---|---|---|
+| `ZARNITSA_RETRIEVAL_MODE=hybrid` | `bm25` | Corpus past a few hundred entries, or you need cross-lingual matching. Needs `pip install -e ".[offline]"`. |
+| `ZARNITSA_USE_LANGGRAPH=true` | off | You want checkpointing or node-level streaming. Needs `.[graph]`. Same output either way. |
+| `ZARNITSA_REDIS_URL=redis://...` | unset | More than one worker. The in-process limiter keeps its window in local memory, so N workers means N counters. Needs `.[redis]`. |

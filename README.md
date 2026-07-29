@@ -60,8 +60,10 @@ Knowledge layer
 deliberation, corpus-grounded, with citations), `/v1/chat/completions` (single
 persona), `/v1/corpus/search`, `/v1/personas`.
 
-Not yet implemented: `build_council_graph()` — the deliberation DAG is hand-rolled
-staged `asyncio`, not a LangGraph `StateGraph`.
+The deliberation DAG runs on hand-rolled staged `asyncio` by default;
+`build_council_graph()` returns a real LangGraph `StateGraph` expressing the same
+topology, enabled with `ZARNITSA_USE_LANGGRAPH=true`. Both call the same per-seat
+code, so they cannot diverge.
 
 See [docs/architecture.md](docs/architecture.md) for the design,
 [docs/personas.md](docs/personas.md) for persona definitions, and
@@ -78,10 +80,11 @@ zarnitsa serve                 # FastAPI on http://localhost:8000
 # OpenAPI docs at http://localhost:8000/docs
 ```
 
-**Run `zarnitsa doctor` after every corpus edit.** One malformed YAML frontmatter
-block makes the whole snapshot fail to load, and because the orchestrator catches
-retrieval errors and continues, the result is confident-looking output with no
-grounding behind it and nothing in the response to indicate it.
+**Run `zarnitsa doctor` after every corpus edit.** A malformed YAML frontmatter block
+now costs you that entry rather than the whole snapshot, and the failure is reported
+in `metadata.grounding`, on `/health`, and in the UI — but `doctor` is still the
+fastest way to see it. If the corpus cannot load at all, council requests return 503
+rather than producing analysis that reads as corpus-supported but isn't.
 
 ### Before deploying anywhere public
 
