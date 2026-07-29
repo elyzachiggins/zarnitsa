@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+import logging
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -16,11 +17,15 @@ from zarnitsa.api.schemas import (
     OAIMessage,
     OAIUsage,
 )
-from zarnitsa.exceptions import PersonaError, ProviderError
+from zarnitsa.api.security import rate_limit, require_api_key
+from zarnitsa.config import settings
+from zarnitsa.exceptions import CorpusError, PersonaError, ProviderError
 from zarnitsa.orchestrator import CULTURAL_PRIOR, run_council, run_council_streaming
 from zarnitsa.personas import load_persona, load_personas
 from zarnitsa.providers import ProviderMessage, get_provider
-from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole, WargameMode
+from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole
+
+log = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Zarnitsa",
@@ -28,18 +33,29 @@ app = FastAPI(
     version=__version__,
 )
 
+# A wildcard origin is only safe because the expensive routes below sit behind an
+# API key. If ZARNITSA_API_KEYS is unset, allow_origins should be narrowed too —
+# wildcard CORS plus no auth means any page on the internet can spend your budget.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-API-Key", "Authorization"],
 )
+
+# Routes that trigger model calls. Order matters: the key check populates the
+# identity the limiter buckets on.
+_METERED = [Depends(require_api_key), Depends(rate_limit)]
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "version": __version__}
+async def health() -> dict[str, object]:
+    return {
+        "status": "ok",
+        "version": __version__,
+        "auth_required": settings.auth_required,
+    }
 
 
 @app.get("/v1/personas")
@@ -57,7 +73,11 @@ async def list_personas_endpoint() -> list[dict[str, str]]:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.post("/v1/chat/completions", response_model=OAIChatCompletionResponse)
+@app.post(
+    "/v1/chat/completions",
+    response_model=OAIChatCompletionResponse,
+    dependencies=_METERED,
+)
 async def chat_completions(req: OAIChatCompletionRequest) -> OAIChatCompletionResponse:
     """OpenAI-compatible single-persona chat. Default persona is the Chief of General Staff."""
     persona_role_str = req.persona or "chief_of_general_staff"
@@ -80,7 +100,6 @@ async def chat_completions(req: OAIChatCompletionRequest) -> OAIChatCompletionRe
             messages=messages,
             system=system_prompt,
             max_tokens=req.max_tokens,
-            temperature=req.temperature,
         )
     except ProviderError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
@@ -101,20 +120,16 @@ async def chat_completions(req: OAIChatCompletionRequest) -> OAIChatCompletionRe
     )
 
 
-@app.post("/v1/council", response_model=CouncilResponse)
+@app.post("/v1/council", response_model=CouncilResponse, dependencies=_METERED)
 async def council_deliberate(req: CouncilRequest) -> CouncilResponse:
-    """Full institutional council deliberation.
-
-    Currently runs the personas sequentially through DELIBERATION_ORDER. Parallel
-    deliberation via LangGraph is the next milestone.
-    """
+    """Full institutional council deliberation across four staged rounds."""
     try:
         return await run_council(req)
     except (PersonaError, ProviderError) as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.post("/v1/council/stream")
+@app.post("/v1/council/stream", dependencies=_METERED)
 async def council_stream(req: CouncilRequest) -> StreamingResponse:
     """SSE stream — emits each PersonaTurn as JSON the moment it finishes.
 
@@ -122,6 +137,7 @@ async def council_stream(req: CouncilRequest) -> StreamingResponse:
     Final event:  data: {"type": "done"}\n\n
     Error event:  data: {"type": "error", "message": "..."}\n\n
     """
+
     async def generate():
         try:
             async for turn in run_council_streaming(req):
@@ -130,6 +146,15 @@ async def council_stream(req: CouncilRequest) -> StreamingResponse:
             yield 'data: {"type": "done"}\n\n'
         except (PersonaError, ProviderError) as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        except Exception:
+            # The response has already begun, so an unhandled exception here would
+            # otherwise close the stream with no terminal event and leave the client
+            # spinning until its own timeout fires.
+            log.exception("council stream failed")
+            yield (
+                'data: {"type": "error", "message": '
+                '"internal error during deliberation"}\n\n'
+            )
 
     return StreamingResponse(
         generate(),
@@ -141,11 +166,13 @@ async def council_stream(req: CouncilRequest) -> StreamingResponse:
     )
 
 
-@app.post("/v1/corpus/search")
-async def corpus_search(query: str, top_k: int = 8) -> list[dict[str, object]]:
-    """Stub. Implement with `zarnitsa.corpus.Retriever` once snapshot has real entries."""
+@app.get("/v1/corpus/search", dependencies=[Depends(require_api_key)])
+async def corpus_search(
+    query: str = Query(..., min_length=1),
+    top_k: int = Query(8, ge=1, le=50),
+) -> list[dict[str, object]]:
+    """Rank corpus entries against a query. No model calls, so no rate limit."""
     from zarnitsa.corpus import Retriever
-    from zarnitsa.exceptions import CorpusError
 
     try:
         retriever = Retriever()
@@ -158,7 +185,7 @@ async def corpus_search(query: str, top_k: int = 8) -> list[dict[str, object]]:
             "id": entry.id,
             "title": entry.title,
             "tier": entry.tier.value,
-            "score": score,
+            "score": round(score, 4),
             "snippet": entry.content[:240],
         }
         for entry, score in hits
