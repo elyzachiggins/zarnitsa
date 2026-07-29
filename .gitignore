@@ -75,3 +75,5 @@ replay/
 .DS_Store
 ehthumbs.db
 desktop.ini
+.venv/
+eval-results.json

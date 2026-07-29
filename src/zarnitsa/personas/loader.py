@@ -8,10 +8,20 @@ from pathlib import Path
 import frontmatter
 from pydantic import BaseModel, Field
 
+from zarnitsa.config import settings
 from zarnitsa.exceptions import PersonaError
 from zarnitsa.types import PersonaRole
 
-PERSONAS_DIR = Path(__file__).resolve().parents[3] / "data" / "personas"
+
+def personas_dir() -> Path:
+    """Resolve the persona directory through the same setting the corpus uses.
+
+    This was previously a module-level `Path(__file__).parents[3] / "data" / "personas"`,
+    which walks out of site-packages on a non-editable install and ignores
+    ZARNITSA_DATA_DIR entirely — so the corpus and the personas could disagree about
+    where `data/` is.
+    """
+    return settings.resolved_data_dir / "personas"
 
 
 class Persona(BaseModel):
@@ -49,9 +59,8 @@ def _parse_file(path: Path) -> Persona:
     )
 
 
-@lru_cache(maxsize=1)
-def load_personas(directory: Path | None = None) -> list[Persona]:
-    base = directory or PERSONAS_DIR
+@lru_cache(maxsize=4)
+def _load_personas_cached(base: Path) -> tuple[Persona, ...]:
     if not base.exists():
         raise PersonaError(f"persona directory not found: {base}")
     files = sorted(base.glob("*.md"))
@@ -61,9 +70,20 @@ def load_personas(directory: Path | None = None) -> list[Persona]:
     for p in files:
         post = frontmatter.load(p)
         if "role" not in post.metadata:
-            continue
+            continue  # skip README.md and other non-persona markdown
         personas.append(_parse_file(p))
-    return personas
+    if not personas:
+        raise PersonaError(f"no files with a 'role' frontmatter key in {base}")
+    return tuple(personas)
+
+
+def load_personas(directory: Path | None = None) -> list[Persona]:
+    """Load the council personas. Cached per directory.
+
+    Returns a fresh list each call: the cache holds a tuple, so a caller that mutates
+    the result can't corrupt what every later caller sees.
+    """
+    return list(_load_personas_cached(directory or personas_dir()))
 
 
 def load_persona(role: PersonaRole) -> Persona:

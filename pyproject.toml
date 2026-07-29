@@ -24,15 +24,19 @@ dependencies = [
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.9.0",
     "pydantic-settings>=2.6.0",
-    "langgraph>=0.2.50",
-    "langchain-core>=0.3.0",
     "python-frontmatter>=1.1.0",
     "pyyaml>=6.0.2",
     "httpx>=0.27.0",
+    "rank-bm25>=0.2.2",
     "rich>=13.9.0",
     "typer>=0.13.0",
-    "numpy>=2.0.0",
 ]
+# Removed from the runtime set:
+#   langgraph / langchain-core — declared but never imported; the only function that
+#     referenced the concept, build_council_graph(), raises NotImplementedError. They
+#     pulled a large transitive tree into every deploy for nothing. Re-add when the
+#     StateGraph milestone actually lands.
+#   numpy — was never imported either (rank-bm25 brings its own).
 
 [project.optional-dependencies]
 cloud-extras = [
@@ -41,6 +45,15 @@ cloud-extras = [
 offline = [
     "ollama>=0.4.0",
     "sentence-transformers>=3.3.0",
+]
+# Optional: the LangGraph StateGraph execution path (ZARNITSA_USE_LANGGRAPH=true).
+# Not needed by default — the asyncio path expresses the same DAG without it.
+graph = [
+    "langgraph>=0.2.50",
+]
+# Optional: shared rate-limit window across workers (ZARNITSA_REDIS_URL).
+redis = [
+    "redis>=5.0.0",
 ]
 dev = [
     "pytest>=8.3.0",
@@ -71,7 +84,22 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
-ignore = ["E501"]
+ignore = [
+    "E501",
+    # Cyrillic is load-bearing throughout this project — persona prompts, the
+    # cultural prior, the corpus, and the transliteration rules all quote it
+    # deliberately. RUF001/2/3 flag every such character as a homoglyph typo.
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    # `typer.Option(...)` in a parameter default is the documented Typer idiom.
+    "B008",
+    # `class Foo(str, Enum)` predates this work and is relied on for JSON
+    # serialisation; migrating to StrEnum is a separate, testable change.
+    "UP042",
+    # FidelityViolation reads better than FidelityViolationError.
+    "N818",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

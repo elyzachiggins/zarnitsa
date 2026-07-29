@@ -360,3 +360,17 @@ footer {
   .sidebar { display: none; }
   .chat-history { padding: 0.875rem; }
 }
+
+/* Shown when a deliberation ran without full corpus grounding. Deliberately
+   high-contrast: output that lacks sources is visually indistinguishable from
+   output that has them, which is exactly how the corpus outage went unnoticed. */
+.grounding-warning {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-left: 3px solid #c9a227;
+  background: rgba(201, 162, 39, 0.09);
+  color: #e0c76a;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+}

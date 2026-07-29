@@ -2,14 +2,48 @@ import './style.css';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
+const KEY_STORAGE = 'zarnitsa_api_key';
+
+/**
+ * Optional shared secret for a protected deployment.
+ *
+ * This is stored per-browser rather than baked into the bundle, because anything
+ * compiled into a static site served from GitHub Pages is readable by everyone and
+ * is therefore not a secret. The key here lets an operator raise their own rate
+ * limit on a private deployment; a *public* demo is protected by the server-side
+ * per-IP limit, not by this.
+ */
+function authHeader(): Record<string, string> {
+  try {
+    const key = localStorage.getItem(KEY_STORAGE);
+    return key ? { 'X-API-Key': key } : {};
+  } catch {
+    return {}; // localStorage unavailable (private mode, blocked cookies)
+  }
+}
+
+(window as unknown as Record<string, unknown>).zarnitsa = {
+  setKey(key: string): string {
+    localStorage.setItem(KEY_STORAGE, key);
+    return 'Key stored. Reload not required.';
+  },
+  clearKey(): string {
+    localStorage.removeItem(KEY_STORAGE);
+    return 'Key cleared.';
+  },
+};
+
 interface Citation { entry_id: string; tier: string; snippet: string; }
 interface PersonaTurn { persona: string; content: string; citations: Citation[]; }
-interface CouncilResponse {
-  recommendation: string;
-  courses_of_action: string[];
-  dissents: string[];
-  turns: PersonaTurn[];
+interface Grounding {
+  status: string;
+  is_grounded: boolean;
+  entry_ids: string[];
+  corpus_size: number;
+  warning: string | null;
 }
+// CouncilResponse was dropped when the UI moved to the SSE stream in aff2680 — the
+// non-streaming shape is no longer parsed here, and tsc flagged it as unused.
 interface Exchange {
   scenario: string;
   mode: string;
@@ -169,11 +203,23 @@ async function submitScenario(): Promise<void> {
     try {
       const res = await fetch(`${API_BASE}/v1/council/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify(body),
         signal: controller.signal,
       });
 
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(
+          'This deployment requires an API key. Run `zarnitsa.setKey("<key>")` in the ' +
+          'browser console to store one, then try again.',
+        );
+      }
+      if (res.status === 429) {
+        const retry = res.headers.get('Retry-After');
+        throw new Error(
+          `Rate limit reached${retry ? ` — try again in about ${retry}s` : ''}.`,
+        );
+      }
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`);
 
       const reader = res.body!.getReader();
@@ -192,9 +238,20 @@ async function submitScenario(): Promise<void> {
         for (const part of parts) {
           const line = part.trim();
           if (!line.startsWith('data: ')) continue;
-          const data = JSON.parse(line.slice(6)) as { type: string; turn?: PersonaTurn; message?: string };
+          const data = JSON.parse(line.slice(6)) as {
+            type: string; turn?: PersonaTurn; message?: string; grounding?: Grounding;
+          };
 
-          if (data.type === 'turn' && data.turn) {
+          if (data.type === 'grounding' && data.grounding) {
+            // Arrives before any analysis. If the council had no source material,
+            // the user needs to know that before reading the output, not after.
+            if (data.grounding.warning) {
+              const warn = document.createElement('div');
+              warn.className = 'grounding-warning';
+              warn.textContent = `⚠ ${data.grounding.warning}`;
+              exchangeEl.insertBefore(warn, turnsEl);
+            }
+          } else if (data.type === 'turn' && data.turn) {
             turns.push(data.turn);
             // Append card immediately — first card expanded, rest collapsed
             const cardHtml = renderPersonaCard(data.turn, turns.length > 1);
