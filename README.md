@@ -56,7 +56,16 @@ Knowledge layer
 
 ## Status
 
-**Pre-MVP scaffolding.** APIs are stubs; only `/v1/chat/completions` with a single persona is operational. See [docs/architecture.md](docs/architecture.md) for the full design and [docs/personas.md](docs/personas.md) for persona definitions.
+**Pre-MVP.** Operational: `/v1/council` and `/v1/council/stream` (full five-seat
+deliberation, corpus-grounded, with citations), `/v1/chat/completions` (single
+persona), `/v1/corpus/search`, `/v1/personas`.
+
+Not yet implemented: `build_council_graph()` — the deliberation DAG is hand-rolled
+staged `asyncio`, not a LangGraph `StateGraph`.
+
+See [docs/architecture.md](docs/architecture.md) for the design,
+[docs/personas.md](docs/personas.md) for persona definitions, and
+[docs/operations.md](docs/operations.md) for security, cost, and backbone selection.
 
 ## Quickstart (development)
 
@@ -64,9 +73,29 @@ Knowledge layer
 # Python 3.11+
 uv sync                        # or: pip install -e ".[dev]"
 cp .env.example .env           # add your ANTHROPIC_API_KEY
+zarnitsa doctor                # verify corpus, personas, keys, security posture
 zarnitsa serve                 # FastAPI on http://localhost:8000
 # OpenAPI docs at http://localhost:8000/docs
 ```
+
+**Run `zarnitsa doctor` after every corpus edit.** One malformed YAML frontmatter
+block makes the whole snapshot fail to load, and because the orchestrator catches
+retrieval errors and continues, the result is confident-looking output with no
+grounding behind it and nothing in the response to indicate it.
+
+### Before deploying anywhere public
+
+Set `ZARNITSA_API_KEYS`. Each council request spends five model completions; an
+unauthenticated public endpoint is a way for strangers to spend your model budget.
+See [docs/operations.md](docs/operations.md).
+
+### Cost
+
+A deliberation is five calls at 6–8k `max_tokens`, so **output price dominates**:
+roughly $0.78 on `claude-opus-4-7` versus ~$0.025 on `deepseek/deepseek-v3.2` via
+OpenRouter. Seats can be routed independently — cheap models for the four supporting
+personas, a stronger one for the Commander-in-Chief synthesis. Compare backbones on
+evidence with `zarnitsa eval`.
 
 ## Offline deployment
 

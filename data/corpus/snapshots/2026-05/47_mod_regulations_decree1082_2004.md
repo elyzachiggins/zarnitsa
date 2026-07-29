@@ -3,7 +3,7 @@ id: mod_regulations_decree1082_2004
 title: "Вопросы Министерства обороны Российской Федерации (Указ Президента РФ № 1082, 16.08.2004) — Regulations on the Ministry of Defense (full verbatim text)"
 tier: primary_doctrine
 source_date: "2004-08-16"
-source_citation: "Ukaz Prezidenta RF ot 16.08.2004 N 1082 "Voprosy Ministerstva oborony RF" (s izm.). Istochnik: raw/Voprosy Ministerstva oborony ... N 1082.docx (pravo.gov.ru)."
+source_citation: 'Ukaz Prezidenta RF ot 16.08.2004 N 1082 "Voprosy Ministerstva oborony RF" (s izm.). Istochnik: raw/Voprosy Ministerstva oborony ... N 1082.docx (pravo.gov.ru).'
 provenance_note: "VERBATIM SOURCE. Text extracted from the source document. No analysis included - source text only. Governing instrument for the Ministry of Defense - companion to Decree 631 (General Staff)."
 language: ru
 keywords:

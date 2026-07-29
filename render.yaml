@@ -3,9 +3,17 @@ services:
     name: zarnitsa-api
     runtime: python
     buildCommand: pip install -e .
-    startCommand: uvicorn zarnitsa.api.app:app --host 0.0.0.0 --port $PORT
+    # A single worker is assumed: the rate limiter keeps its window in process
+    # memory, so N workers would multiply the effective limit by N.
+    startCommand: uvicorn zarnitsa.api.app:app --host 0.0.0.0 --port $PORT --workers 1
     envVars:
       - key: ANTHROPIC_API_KEY
+        sync: false
+      # Shared secrets for the council endpoints. Set this in the Render dashboard.
+      # Without it, /v1/council is public and every call spends five completions.
+      - key: ZARNITSA_API_KEYS
+        sync: false
+      - key: OPENROUTER_API_KEY
         sync: false
       - key: ZARNITSA_BACKBONE
         value: anthropic
@@ -13,3 +21,10 @@ services:
         value: 2026-05
       - key: ZARNITSA_DATA_DIR
         value: data
+      - key: ZARNITSA_RATE_LIMIT_REQUESTS
+        value: "20"
+      - key: ZARNITSA_RATE_LIMIT_WINDOW_SECONDS
+        value: "3600"
+      # Narrow to the GitHub Pages origin once the frontend URL is stable.
+      - key: ZARNITSA_ALLOWED_ORIGINS
+        value: "*"

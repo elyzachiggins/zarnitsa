@@ -3,4 +3,4 @@
 from zarnitsa.corpus.entry import CorpusEntry, load_snapshot
 from zarnitsa.corpus.retrieval import Retriever
 
-__all__ = ["CorpusEntry", "load_snapshot", "Retriever"]
+__all__ = ["CorpusEntry", "Retriever", "load_snapshot"]

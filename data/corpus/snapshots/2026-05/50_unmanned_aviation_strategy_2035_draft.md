@@ -3,7 +3,7 @@ id: unmanned_aviation_strategy_2035_draft
 title: "Стратегия развития беспилотной авиации Российской Федерации на период до 2030 года и на перспективу до 2035 года (ПРОЕКТ) — full verbatim text"
 tier: primary_doctrine
 source_date: "2025-01-01"
-source_citation: "Proekt rasporyazheniya Pravitelstva RF "Strategiya razvitiya bespilotnoy aviatsii RF ... do 2030 ... 2035" (PROEKT, 2025). Istochnik: raw/Strategiya 01.10.2025 (1).docx."
+source_citation: 'Proekt rasporyazheniya Pravitelstva RF "Strategiya razvitiya bespilotnoy aviatsii RF ... do 2030 ... 2035" (PROEKT, 2025). Istochnik: raw/Strategiya 01.10.2025 (1).docx.'
 provenance_note: "VERBATIM SOURCE. Text extracted from the source document. No analysis included - source text only. NOTE: this is a DRAFT (proekt), not an enacted document."
 language: ru
 keywords:

@@ -21,8 +21,15 @@ class OAIMessage(BaseModel):
 class OAIChatCompletionRequest(BaseModel):
     model: str = "zarnitsa-cgs"
     messages: list[OAIMessage]
-    temperature: float = 0.7
-    max_tokens: int = 2048
+    # Accepted for OpenAI wire compatibility and then IGNORED. Sampling parameters
+    # were removed in the Claude Opus 4.7 generation and forwarding one returns a
+    # 400, so the Anthropic backbone drops it. Steer output via the prompt instead.
+    temperature: float | None = Field(
+        default=None,
+        deprecated=True,
+        description="Ignored. Present only so OpenAI-shaped clients don't fail.",
+    )
+    max_tokens: int = Field(default=2048, ge=1, le=32000)
     stream: bool = False
     # Zarnitsa extension — pick a persona by role string
     persona: str | None = None
