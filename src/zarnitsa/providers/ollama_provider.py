@@ -6,7 +6,13 @@ import httpx
 
 from zarnitsa.config import settings
 from zarnitsa.exceptions import ProviderError
-from zarnitsa.providers.base import BaseProvider, ProviderMessage, ProviderResponse
+from zarnitsa.providers.base import (
+    BaseProvider,
+    ProviderMessage,
+    ProviderResponse,
+    SystemPrompt,
+    flatten_system,
+)
 
 
 class OllamaProvider(BaseProvider):
@@ -16,19 +22,25 @@ class OllamaProvider(BaseProvider):
     def __init__(self, *, model: str | None = None, host: str | None = None) -> None:
         self.model = model or settings.ollama_model
         self.host = host or settings.ollama_host
-        self.client = httpx.AsyncClient(base_url=self.host, timeout=120.0)
+        # A 27B model generating 6k tokens on CPU can take many minutes; the old
+        # 120s ceiling truncated offline deliberations with a connect-style timeout.
+        self.client = httpx.AsyncClient(
+            base_url=self.host,
+            timeout=httpx.Timeout(connect=10.0, read=600.0, write=30.0, pool=10.0),
+        )
 
     async def complete(
         self,
         messages: list[ProviderMessage],
         *,
-        system: str | None = None,
+        system: SystemPrompt | None = None,
         max_tokens: int = 2048,
         temperature: float = 0.7,
     ) -> ProviderResponse:
         payload_messages: list[dict[str, str]] = []
-        if system:
-            payload_messages.append({"role": "system", "content": system})
+        system_text = flatten_system(system)
+        if system_text:
+            payload_messages.append({"role": "system", "content": system_text})
         payload_messages.extend({"role": m.role, "content": m.content} for m in messages)
 
         try:
