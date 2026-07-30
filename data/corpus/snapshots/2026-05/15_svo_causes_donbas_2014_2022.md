@@ -6,6 +6,7 @@ source_date: "2025-01-01"
 keywords: ["Донбасс", "Минские соглашения", "Минск-1", "Минск-2", "ВСУ", "АТО", "референдум", "Порошенко", "Зеленский", "геноцид"]
 topics: ["ukraine_conflict", "donbas", "minsk_agreements", "escalation"]
 cited_by_personas: ["commander_in_chief", "chief_of_general_staff", "main_intelligence_directorate"]
+source_citation: "Источник: raw/osnovnye-prichiny-i-tseli-spetsialnoy-voennoy-operatsii-rf-istoricheskiy-analiz-voennogo-konflikta.txt."
 ---
 
 укрепляет прозападный внешнеполитический курс Украины. При Б. Обаме стремление США 

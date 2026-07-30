@@ -6,6 +6,7 @@ source_date: "2024-01-01"
 keywords: ["украинский национализм", "ОУН", "УПА", "Бандера", "нацизм", "Рух", "Свобода", "русофобия", "советская Украина"]
 topics: ["ukraine_history", "nationalism", "banderism", "information_narrative"]
 cited_by_personas: ["commander_in_chief", "main_intelligence_directorate"]
+source_citation: "Источник: raw/GROUNDING_for_RRTA.txt."
 ---
 
 https://pastvu.com/

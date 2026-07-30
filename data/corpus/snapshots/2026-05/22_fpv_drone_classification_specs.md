@@ -6,6 +6,7 @@ source_date: "2023-01-01"
 keywords: ["БпЛА", "FPV-дрон", "квадрокоптер", "классификация", "ТТХ", "коммерческие БПЛА", "полет", "полезная нагрузка"]
 topics: ["uav_doctrine", "uav_classification", "fpv_drones", "technical_specs"]
 cited_by_personas: ["unmanned_systems_forces"]
+source_citation: "Источник: raw/ЭКСПЛУАТАЦИЯ И ПРИМЕНЕНИЕ БПЛА.txt."
 ---
 
 1.1 Классификация БпЛА по конструкции ........................................................... 9 

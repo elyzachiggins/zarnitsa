@@ -6,6 +6,7 @@ source_date: "2023-01-01"
 keywords: ["оператор", "подготовка", "метеоусловия", "ограничения", "визуальная ориентировка", "полетное задание", "тренажер"]
 topics: ["uav_doctrine", "operator_training", "tactical_employment"]
 cited_by_personas: ["unmanned_systems_forces"]
+source_citation: "Источник: raw/ЭКСПЛУАТАЦИЯ И ПРИМЕНЕНИЕ БПЛА.txt."
 ---
 
 3 ПОРЯДОК ПОДГОТОВКИ ОПЕРАТОРА FPV-ДРОНА К ПОЛЕТУ И 

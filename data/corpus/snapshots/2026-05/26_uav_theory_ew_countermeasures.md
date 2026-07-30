@@ -6,6 +6,7 @@ source_date: "2024-01-01"
 keywords: ["РЭБ", "противодействие БПЛА", "постановка помех", "глушение", "подавление", "маскировка", "живучесть", "частотная война"]
 topics: ["electronic_warfare", "counter_uav", "uav_survivability"]
 cited_by_personas: ["unmanned_systems_forces", "main_operations_directorate"]
+source_citation: "Источник: raw/ТЕОРИЯ И ПРАКТИКА БПЛА.txt."
 ---
 
 2. Принципы работы РЭБ ...................................... 51 

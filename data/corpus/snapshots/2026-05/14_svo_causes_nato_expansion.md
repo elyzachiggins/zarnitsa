@@ -6,6 +6,7 @@ source_date: "2025-01-01"
 keywords: ["НАТО", "расширение НАТО", "Бжезинский", "однополярный мир", "постсоветское пространство", "Украина", "Майдан", "Будапештский меморандум", "безопасность"]
 topics: ["nato_expansion", "post_cold_war", "ukraine_crisis", "threat_perception"]
 cited_by_personas: ["commander_in_chief", "center_military_strategic", "chief_of_general_staff"]
+source_citation: "Источник: raw/osnovnye-prichiny-i-tseli-spetsialnoy-voennoy-operatsii-rf-istoricheskiy-analiz-voennogo-konflikta.txt."
 ---
 
 ОСНОВНЫЕ ПРИЧИНЫ И ЦЕЛИ СПЕЦИАЛЬНОЙ ВОЕННОЙ ОПЕРАЦИИ РФ: 

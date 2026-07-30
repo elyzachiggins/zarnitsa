@@ -6,6 +6,7 @@ source_date: "2023-01-01"
 keywords: ["аппаратура управления", "частоты", "2.4 ГГц", "5.8 ГГц", "FPV", "видеосигнал", "антенны", "радиобезопасность"]
 topics: ["uav_doctrine", "electronic_warfare", "rf_systems", "fpv_drones"]
 cited_by_personas: ["unmanned_systems_forces"]
+source_citation: "Источник: raw/ЭКСПЛУАТАЦИЯ И ПРИМЕНЕНИЕ БПЛА.txt."
 ---
 
 2 АППАРАТУРА УПРАВЛЕНИЯ И ПЕРЕДАЧИ ВИДЕОСИГНАЛА .......... 49 

@@ -6,6 +6,7 @@ source_date: "2024-04-27"
 keywords: ["арабская весна", "цветные революции", "западное вмешательство", "смена режима", "информационные технологии", "молодежь", "социальные сети", "исламизм"]
 topics: ["color_revolutions", "western_interference", "information_warfare", "middle_east"]
 cited_by_personas: ["main_intelligence_directorate", "center_military_strategic"]
+source_citation: "Источник: raw/GROUNDING_for_RRTA.txt."
 ---
 
 "Арабская весна". Страны Ближнего и Среднего Востока во второй половине XX — начале XXI вв.

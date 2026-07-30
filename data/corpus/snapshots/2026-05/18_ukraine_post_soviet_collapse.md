@@ -6,6 +6,7 @@ source_date: "2024-01-01"
 keywords: ["постсоветская Украина", "экономический кризис", "олигархат", "Кравчук", "независимость 1991", "шоковая терапия", "МВФ", "обнищание"]
 topics: ["ukraine_history", "economic_context", "post_soviet"]
 cited_by_personas: ["economic_advisor", "commander_in_chief"]
+source_citation: "Источник: raw/GROUNDING_for_RRTA.txt."
 ---
 
 Новая жизнь

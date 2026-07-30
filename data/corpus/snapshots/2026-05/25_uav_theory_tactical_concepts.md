@@ -6,6 +6,7 @@ source_date: "2024-01-01"
 keywords: ["разведывательно-ударный комплекс", "тактические БПЛА", "разведка", "целеуказание", "барражирующий боеприпас", "Ланцет", "Герань", "Шахед"]
 topics: ["uav_doctrine", "reconnaissance_strike", "loitering_munitions", "combined_arms"]
 cited_by_personas: ["unmanned_systems_forces", "main_operations_directorate"]
+source_citation: "Источник: raw/ТЕОРИЯ И ПРАКТИКА БПЛА.txt."
 ---
 
 5. Итоги ....................................................................... 36 

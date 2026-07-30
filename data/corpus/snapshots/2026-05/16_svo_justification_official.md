@@ -6,6 +6,7 @@ source_date: "2025-01-01"
 keywords: ["СВО", "денацификация", "демилитаризация", "Донбасс", "мирное население", "Устав ООН", "статья 51", "нацизм", "Бандера", "НАТО"]
 topics: ["svo_justification", "denazification", "un_charter", "nato_threat"]
 cited_by_personas: ["commander_in_chief", "minister_of_defense"]
+source_citation: "Источник: raw/osnovnye-prichiny-i-tseli-spetsialnoy-voennoy-operatsii-rf-istoricheskiy-analiz-voennogo-konflikta.txt."
 ---
 
 наблюдателей на продолжающиеся обстрелы населенных пунктов подр азделениям народной 
