@@ -1,10 +1,10 @@
 """Council deliberation DAG.
 
-Staged parallel execution:
-    Stage 1: GRU       (intel brief — all subsequent stages see this)
-    Stage 2: MOD, CGS  (parallel: war-economy/procurement + operational planning)
-    Stage 3: SOVBEZ    (political-security synthesis — sees Stages 1+2)
-    Stage 4: CINC      (strategic vector, red lines, authorization — sees everything)
+Sequential execution — each stage sees the full output of all prior stages:
+    Stage 1: CGS     (intelligence + operational assessment; НГШ, absorbs GRU intel)
+    Stage 2: MOD     (war-economy / procurement / political-military; sees CGS)
+    Stage 3: SOVBEZ  (political-security synthesis; sees CGS + MOD)
+    Stage 4: CINC    (strategic vector, red lines, authorization; sees everything)
 """
 
 from __future__ import annotations
@@ -59,8 +59,8 @@ def _format_corpus_context(results: list[tuple[CorpusEntry, float]]) -> str:
         + "\n\n---\n\n".join(blocks)
     )
 
-STAGE_1 = [PersonaRole.GRU]
-STAGE_2 = [PersonaRole.MOD, PersonaRole.CGS]
+STAGE_1 = [PersonaRole.CGS]
+STAGE_2 = [PersonaRole.MOD]
 STAGE_3 = [PersonaRole.SOVBEZ]
 STAGE_4 = [PersonaRole.CINC]
 

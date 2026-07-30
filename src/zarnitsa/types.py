@@ -27,16 +27,18 @@ class SourceTier(str, Enum):
 class PersonaRole(str, Enum):
     """The institutional roles modeled in the council.
 
-    Five-seat deliberating council reflecting the actual Russian decision-making apparatus:
-        Stage 1 — GRU (intel brief, informs all subsequent stages)
-        Stage 2 — MOD + CGS (parallel: war-economy/procurement and operational planning)
-        Stage 3 — SOVBEZ (political-security synthesis, sees Stages 1+2)
-        Stage 4 — CINC (strategic vector and authorization, sees everything)
+    Four-seat sequential council reflecting the Russian decision-making apparatus.
+    The General Staff absorbs the intelligence function (the GRU is a directorate
+    of the General Staff), so the CGS opens the cycle with the intel + operational
+    assessment that all subsequent stages build on:
+        Stage 1 — CGS (intelligence + operational assessment; НГШ)
+        Stage 2 — MOD (war-economy / procurement / political-military; sees CGS)
+        Stage 3 — SOVBEZ (political-security synthesis; sees CGS + MOD)
+        Stage 4 — CINC (strategic vector and authorization; sees everything)
     """
 
-    GRU = "main_intelligence_directorate"    # ГРУ / ГУ ГШ
+    CGS = "chief_of_general_staff"           # НГШ (triple-hatted: CGS + First Deputy MoD + ОГВ commander; absorbs GRU intel)
     MOD = "minister_of_defense"              # МО
-    CGS = "chief_of_general_staff"           # НГШ (triple-hatted: CGS + First Deputy MoD + ОГВ commander)
     SOVBEZ = "security_council"              # Совбез
     CINC = "commander_in_chief"              # ВГК
 

@@ -18,9 +18,8 @@ interface Exchange {
 }
 
 const PERSONAS: Record<string, { abbr: string; title: string; cinc?: true }> = {
-  main_intelligence_directorate: { abbr: 'GRU',    title: 'Main Intelligence Directorate' },
-  minister_of_defense:           { abbr: 'MO',     title: 'Minister of Defense' },
   chief_of_general_staff:        { abbr: 'NGSh',   title: 'Chief of the General Staff' },
+  minister_of_defense:           { abbr: 'MO',     title: 'Minister of Defense' },
   security_council:              { abbr: 'Sovbez', title: 'Security Council' },
   commander_in_chief:            { abbr: 'VGK',    title: 'Commander-in-Chief', cinc: true },
 };
@@ -103,11 +102,11 @@ function renderHistory(): void {
   scrollToBottom();
 }
 
+// Keyed by turns completed — the message shown reflects the stage now running.
 const STAGE_STATUS: Record<number, string> = {
-  1: 'MO · NGSh DELIBERATING IN PARALLEL <span class="cursor">█</span>',
-  2: 'MO · NGSh DELIBERATING IN PARALLEL <span class="cursor">█</span>',
-  3: 'SOVBEZ SYNTHESIZING <span class="cursor">█</span>',
-  4: 'VGK RENDERING FINAL DECISION <span class="cursor">█</span>',
+  1: 'MO DELIBERATING <span class="cursor">█</span>',
+  2: 'SOVBEZ SYNTHESIZING <span class="cursor">█</span>',
+  3: 'VGK RENDERING FINAL DECISION <span class="cursor">█</span>',
 };
 
 async function submitScenario(): Promise<void> {
@@ -134,7 +133,7 @@ async function submitScenario(): Promise<void> {
       <span class="bubble-mode">${mode.toUpperCase()}</span>
       <span class="bubble-text">${esc(scenario)}</span>
     </div>
-    <div class="loading-inline" id="stream-status">COUNCIL CONVENING <span class="cursor">█</span></div>
+    <div class="loading-inline" id="stream-status">COUNCIL CONVENING · NGSh ASSESSING <span class="cursor">█</span></div>
     <div class="council-turns" id="stream-turns"></div>`;
   chatHistory.appendChild(exchangeEl);
   scrollToBottom();
