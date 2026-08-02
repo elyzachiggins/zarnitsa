@@ -4,7 +4,7 @@ title: "Положение о Генеральном штабе Вооружён
 tier: primary_doctrine
 source_date: "2013-07-23"
 source_citation: "Указ Президента Российской Федерации от 23.07.2013 № 631 «Вопросы Генерального штаба Вооружённых Сил Российской Федерации» (в редакции указов от 01.07.2014 № 483, 22.04.2020 № 283, 21.12.2020 № 803, 17.01.2022 № 15, 26.02.2024 № 141). Утверждает «Положение о Генеральном штабе Вооружённых Сил Российской Федерации». Источник: pravo.gov.ru. Извлечено из официального текста (raw/Указ № 631 ... .docx, 48 065 знаков)."
-provenance_note: "VERBATIM SOURCE. Full official text extracted from the authoritative .docx (pravo.gov.ru), amendments through 2024. Supersedes a prior version reconstructed from an unreadable scan that contained a fabricated "Article 11". No analysis is included — the entry is source text only."
+provenance_note: "VERBATIM SOURCE. Full official text extracted from the authoritative .docx (pravo.gov.ru), amendments through 2024. Supersedes a prior version reconstructed from an unreadable scan that contained a fabricated 'Article 11'. No analysis is included — the entry is source text only."
 language: ru
 keywords:
   - Генеральный штаб

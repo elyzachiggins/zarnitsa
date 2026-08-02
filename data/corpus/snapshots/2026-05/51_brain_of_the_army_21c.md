@@ -2,8 +2,7 @@
 id: brain_of_the_army_21c
 title: "«Мозг армии» — век XXI — очерк о Генеральном штабе Российской армии (под ред. Ю.Н. Балуевского)"
 tier: academic_russian
-source_date: ""
-source_citation: ""Mozg armii" - vek XXI. Ocherk o trude "Generalnyy shtab Rossiyskoy armii: istoriya i sovremennost" (pod red. NGSh gen. armii Yu.N. Baluevskogo). Istochnik: raw/Mozg armii - vek XXI.docx. Data ne ukazana."
+source_citation: "'Mozg armii' - vek XXI. Ocherk o trude 'Generalnyy shtab Rossiyskoy armii: istoriya i sovremennost' (pod red. NGSh gen. armii Yu.N. Baluevskogo). Istochnik: raw/Mozg armii - vek XXI.docx. Data ne ukazana."
 provenance_note: "VERBATIM SOURCE. Text extracted from the source document. No analysis included - source text only. Publication date not specified in the source."
 language: ru
 keywords:

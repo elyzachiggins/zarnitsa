@@ -2,7 +2,6 @@
 id: cultural_policy_amendments_decree808
 title: "О внесении изменений в Основы государственной культурной политики (Указ № 808) — full verbatim text"
 tier: primary_doctrine
-source_date: ""
 source_citation: "Указ Президента РФ «О внесении изменений в Основы государственной культурной политики» (базовый документ — Указ № 808 от 24.12.2014). Источник: raw/О внесении изменений в Основы государственной культурной политики № 808 Security Council.docx."
 provenance_note: "VERBATIM SOURCE. Full text extracted from the source .docx. No analysis included - source text only."
 language: ru

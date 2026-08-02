@@ -3,7 +3,7 @@ id: fz172_strategic_planning_2014
 title: "О стратегическом планировании в Российской Федерации (Федеральный закон № 172-ФЗ, 28.06.2014, ред. 13.07.2024) — full verbatim text"
 tier: primary_doctrine
 source_date: "2014-06-28"
-source_citation: "Federalnyy zakon ot 28.06.2014 N 172-FZ (red. 13.07.2024) "O strategicheskom planirovanii v RF". Istochnik: raw/N 172-FZ ... .docx."
+source_citation: "Federalnyy zakon ot 28.06.2014 N 172-FZ (red. 13.07.2024) 'O strategicheskom planirovanii v RF'. Istochnik: raw/N 172-FZ ... .docx."
 provenance_note: "VERBATIM SOURCE. Text extracted from the source document. No analysis included - source text only."
 language: ru
 keywords:
