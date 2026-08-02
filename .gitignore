@@ -75,3 +75,6 @@ replay/
 .DS_Store
 ehthumbs.db
 desktop.ini
+
+# R history
+.Rhistory
