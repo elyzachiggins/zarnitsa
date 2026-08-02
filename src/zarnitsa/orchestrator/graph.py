@@ -13,51 +13,66 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
-from zarnitsa.corpus.entry import CorpusEntry
-from zarnitsa.corpus.retrieval import Retriever
+from zarnitsa.corpus.chunker import Chunk
+from zarnitsa.corpus.index import ChunkIndex
 from zarnitsa.orchestrator.cultural_prior import CULTURAL_PRIOR
 from zarnitsa.personas import load_personas
 from zarnitsa.personas.loader import Persona
 from zarnitsa.providers import ProviderMessage, get_provider
-from zarnitsa.types import CouncilRequest, CouncilResponse, PersonaRole, PersonaTurn, WargameMode
+from zarnitsa.types import (
+    Citation,
+    CouncilRequest,
+    CouncilResponse,
+    PersonaRole,
+    PersonaTurn,
+    WargameMode,
+)
 
 if TYPE_CHECKING:
     from zarnitsa.providers.base import BaseProvider
 
 log = logging.getLogger(__name__)
 
-# Module-level singleton — corpus loads once on first request, not on every call.
-_retriever: Retriever | None = None
+# Module-level singleton — vector index loads once, lazily.
+_index: ChunkIndex | None = None
+_index_loaded = False
+
+_RETRIEVAL_TOP_K = 6
 
 
-def _get_retriever() -> Retriever:
-    global _retriever
-    if _retriever is None:
-        _retriever = Retriever()
-        log.info("Corpus retriever initialised: %d entries loaded", len(_retriever.entries))
-    return _retriever
+def _get_index() -> ChunkIndex | None:
+    """Load the precomputed chunk index once; degrade gracefully if absent."""
+    global _index, _index_loaded
+    if not _index_loaded:
+        _index_loaded = True
+        try:
+            _index = ChunkIndex.load()
+            log.info("Vector index loaded: %d chunks", len(_index.chunks))
+        except Exception as e:  # noqa: BLE001 — run ungrounded if index/token missing
+            log.warning("Vector index unavailable (%s) — deliberation runs ungrounded until built", e)
+            _index = None
+    return _index
 
 
-def _format_corpus_context(results: list[tuple[CorpusEntry, float]]) -> str:
-    if not results:
-        return ""
+def _format_chunk_context(chunks: list[Chunk]) -> str:
+    """Grounding block. Deliberately instructs against inline citations —
+    provenance is carried in PersonaTurn.citations and shown only on request."""
     blocks = []
-    for entry, _score in results:
-        snippet = entry.content[:700].rstrip()
-        if len(entry.content) > 700:
-            snippet += "…"
-        blocks.append(
-            f"[{entry.tier.value.upper()} | {entry.id}]\n"
-            f"**{entry.title}**\n\n"
-            f"{snippet}"
-        )
+    for c in chunks:
+        label = c.title + (f" — {c.anchor}" if c.anchor else "")
+        blocks.append(f"[{c.tier.value}] {label}\n{c.text}")
     return (
-        "# Corpus — retrieved grounding material\n\n"
-        "The following entries are drawn from the verified doctrine and source corpus. "
-        "Ground your analysis in this material where relevant. "
-        "When you cite an entry, reference its entry_id.\n\n"
+        "# Grounding material (retrieved from the verified corpus)\n\n"
+        "Base your analysis on the material below where relevant. Write clean analytical prose. "
+        "Do NOT insert citations, source tags, entry ids, or URLs into your output — provenance is "
+        "tracked separately and surfaced only on request.\n\n"
         + "\n\n---\n\n".join(blocks)
     )
+
+
+def _chunk_snippet(c: Chunk) -> str:
+    head = " ".join(c.text.split())[:160]
+    return f"{c.anchor}: {head}" if c.anchor else head
 
 STAGE_1 = [PersonaRole.CGS]
 STAGE_2 = [PersonaRole.MOD]
@@ -156,11 +171,17 @@ async def _run_persona(
     if request.constraints:
         user_msg_parts.append("# Constraints\n\n" + "\n".join(f"- {c}" for c in request.constraints))
 
+    citations: list[Citation] = []
     try:
-        corpus_results = _get_retriever().search(request.scenario, top_k=6)
-        corpus_context = _format_corpus_context(corpus_results)
-        if corpus_context:
-            user_msg_parts.append(corpus_context)
+        index = _get_index()
+        if index is not None:
+            hits = index.search(request.scenario, top_k=_RETRIEVAL_TOP_K, persona=persona.role.value)
+            if hits:
+                user_msg_parts.append(_format_chunk_context([c for c, _ in hits]))
+                citations = [
+                    Citation(entry_id=c.entry_id, tier=c.tier, snippet=_chunk_snippet(c))
+                    for c, _ in hits
+                ]
     except Exception:
         log.exception("Corpus retrieval failed for persona %s — proceeding without grounding", persona.role)
 
@@ -171,7 +192,9 @@ async def _run_persona(
         user_msg_parts.append(mode_instruction)
     user_msg_parts.append(
         f"# Your turn\n\nSpeak now as {persona.title} ({persona.russian_name}). "
-        "Follow your defined output format. Be specific. Mark fidelity."
+        "Follow your defined output format. Be specific. Ground your claims in the retrieved "
+        "material; if the corpus does not support a point, say so rather than inventing it. "
+        "Write clean prose — do not insert citations, source tags, or entry ids into your output."
     )
 
     resp = await prov.complete(
@@ -179,7 +202,7 @@ async def _run_persona(
         system=_compose_system_prompt(persona.system_prompt),
         max_tokens=max_tokens,
     )
-    return PersonaTurn(persona=persona.role, content=resp.content)
+    return PersonaTurn(persona=persona.role, content=resp.content, citations=citations)
 
 
 async def _run_stage(

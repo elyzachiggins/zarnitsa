@@ -40,10 +40,14 @@ const session: Exchange[] = [];
 
 function renderPersonaCard(turn: PersonaTurn, defaultCollapsed = false): string {
   const meta = PERSONAS[turn.persona] ?? { abbr: turn.persona.slice(0, 6).toUpperCase(), title: turn.persona };
+  // Sources are hidden by default and revealed on demand (no inline clutter).
   const citations = turn.citations?.length
-    ? `<div class="citations">${turn.citations.map(c =>
-        `<span class="citation-tag">${esc(c.entry_id)} · ${esc(c.tier)}</span>`
-      ).join('')}</div>`
+    ? `<details class="sources">
+        <summary>Sources (${turn.citations.length})</summary>
+        <div class="citations">${turn.citations.map(c =>
+          `<div class="citation-tag"><span class="cite-id">${esc(c.entry_id)}</span>${c.snippet ? ` · ${esc(c.snippet)}` : ''}</div>`
+        ).join('')}</div>
+      </details>`
     : '';
   return `
     <div class="persona-card${meta.cinc ? ' is-cinc' : ''}">

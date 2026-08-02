@@ -51,6 +51,7 @@ class Chunk(BaseModel):
     anchor: str = ""          # structural label, e.g. "Статья 67" or "Раздел III"
     text: str
     ordinal: int = 0          # position within the entry
+    cited_by_personas: list[str] = Field(default_factory=list)
 
     def citation_label(self) -> str:
         base = self.source_citation or self.title
@@ -135,6 +136,7 @@ def chunk_entry(entry: CorpusEntry) -> list[Chunk]:
                 anchor=anchor,
                 text=text,
                 ordinal=ordinal,
+                cited_by_personas=list(entry.cited_by_personas),
             )
         )
         ordinal += 1

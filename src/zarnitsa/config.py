@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     ollama_model: str = "gemma3:27b"
     ollama_host: str = "http://localhost:11434"
 
+    # Embedding retrieval (Hugging Face Inference API, BGE-M3)
+    hf_token: str | None = Field(default=None, alias="HF_TOKEN")
+    embedding_model: str = "BAAI/bge-m3"
+
     corpus_snapshot: str = "2026-05"
     data_dir: Path = Path("data")
 
