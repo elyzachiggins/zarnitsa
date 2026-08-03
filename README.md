@@ -82,7 +82,7 @@ See [docs/deployment.md](docs/deployment.md) for air-gapped deployment.
 
 ## License
 
-[MIT](LICENSE). The *code* is open. The *deployed service* is gated — see [docs/distribution.md](docs/distribution.md) for why and how.
+© 2026 Elyza Higgins. All rights reserved. No permission is granted to reproduce, distribute, or create derivative works from this repository.
 
 ## Acknowledgments
 

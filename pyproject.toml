@@ -3,16 +3,14 @@ name = "zarnitsa"
 version = "0.0.1"
 description = "Multi-institution Russian decision-modeling system for OPFOR red-team and adversary-behavior training"
 readme = "README.md"
-license = { file = "LICENSE" }
 requires-python = ">=3.11"
 authors = [
-    { name = "Zarnitsa contributors" },
+    { name = "Elyza Higgins" },
 ]
 keywords = ["llm", "wargaming", "opfor", "red-team", "russia", "doctrine", "multi-agent"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Education",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
