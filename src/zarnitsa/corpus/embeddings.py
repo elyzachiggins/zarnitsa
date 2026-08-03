@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import time
 
+import certifi
 import httpx
 import numpy as np
 
 from zarnitsa.config import settings
 
-_ENDPOINT = "https://api-inference.huggingface.co/models/{model}"
+# HF deprecated api-inference.huggingface.co; use the Inference Providers router.
+_ENDPOINT = "https://router.huggingface.co/hf-inference/models/{model}/pipeline/feature-extraction"
 _DIM = 1024  # BGE-M3 dense dimension
 
 
@@ -28,11 +30,10 @@ def _client() -> httpx.Client:
         raise EmbeddingError(
             "HF_TOKEN is not set — export it locally and add it to the Render env."
         )
-    url = _ENDPOINT.format(model=settings.embedding_model)
     return httpx.Client(
-        base_url=url,
         headers={"Authorization": f"Bearer {settings.hf_token}"},
         timeout=120.0,
+        verify=certifi.where(),
     )
 
 
@@ -54,14 +55,15 @@ def embed_texts(texts: list[str], *, batch_size: int = 16, max_retries: int = 4)
     """Embed a list of texts, unit-normalized for cosine similarity."""
     if not texts:
         return np.zeros((0, _DIM), dtype=np.float32)
+    url = _ENDPOINT.format(model=settings.embedding_model)
     out: list[np.ndarray] = []
     with _client() as client:
         for start in range(0, len(texts), batch_size):
             batch = texts[start : start + batch_size]
-            payload = {"inputs": batch, "options": {"wait_for_model": True}}
+            payload = {"inputs": batch}
             resp: httpx.Response | None = None
             for attempt in range(max_retries):
-                resp = client.post("", json=payload)
+                resp = client.post(url, json=payload)
                 if resp.status_code == 503:      # model still loading
                     time.sleep(5 * (attempt + 1))
                     continue
