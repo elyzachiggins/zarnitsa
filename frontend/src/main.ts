@@ -116,7 +116,6 @@ const STAGE_STATUS: Record<number, string> = {
 async function submitScenario(): Promise<void> {
   const input = document.getElementById('chat-input') as HTMLTextAreaElement;
   const modeSelect = document.getElementById('mode') as HTMLSelectElement;
-  const cincInput = document.getElementById('cinc-intent') as HTMLInputElement;
   const sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
 
   const scenario = input.value.trim();
@@ -158,8 +157,6 @@ async function submitScenario(): Promise<void> {
       wargame_mode: mode,
       prior_exchanges: priorExchanges,
     };
-    const cinc = cincInput.value.trim();
-    if (cinc) body.cinc_intent = cinc;
 
     const controller = new AbortController();
     const hardTimeout = setTimeout(() => controller.abort(), 600000);
@@ -275,9 +272,6 @@ function init(): void {
           <option value="predetermined">PREDETERMINED — MODE 2</option>
         </select>
         <div class="mode-hint" id="mode-hint">${MODE_HINTS['strategic']}</div>
-
-        <label style="margin-top:1.25rem">CINC INTENT <span style="opacity:0.4">(optional)</span></label>
-        <input id="cinc-intent" type="text" placeholder="Commander's stated intent...">
       </div>
 
       <div class="chat-main">
