@@ -43,7 +43,8 @@ def _index_dir(snapshot: str | None = None) -> Path:
 def build_index(snapshot: str | None = None, *, batch_size: int = 16) -> int:
     """Chunk the snapshot, embed all chunks, and persist the index. Returns count."""
     chunks = chunk_snapshot(snapshot)
-    vectors = embed_texts([c.text for c in chunks], batch_size=batch_size)
+    print(f"embedding {len(chunks)} chunks (BGE-M3)...", flush=True)
+    vectors = embed_texts([c.text for c in chunks], batch_size=batch_size, progress=True)
     d = _index_dir(snapshot)
     d.mkdir(parents=True, exist_ok=True)
     np.save(d / "vectors.npy", vectors)

@@ -51,7 +51,9 @@ def _pool(data: object) -> np.ndarray:
     return arr
 
 
-def embed_texts(texts: list[str], *, batch_size: int = 16, max_retries: int = 4) -> np.ndarray:
+def embed_texts(
+    texts: list[str], *, batch_size: int = 16, max_retries: int = 4, progress: bool = False
+) -> np.ndarray:
     """Embed a list of texts, unit-normalized for cosine similarity."""
     if not texts:
         return np.zeros((0, _DIM), dtype=np.float32)
@@ -82,6 +84,9 @@ def embed_texts(texts: list[str], *, batch_size: int = 16, max_retries: int = 4)
                 body = resp.text[:200] if resp is not None else ""
                 raise EmbeddingError(f"HF inference failed after retries: {code} {body}")
             out.append(_pool(resp.json()))
+            if progress:
+                done = min(start + batch_size, len(texts))
+                print(f"  embedded {done}/{len(texts)} chunks", flush=True)
     vecs = np.vstack(out).astype(np.float32)
     vecs /= np.linalg.norm(vecs, axis=1, keepdims=True) + 1e-12
     return vecs
